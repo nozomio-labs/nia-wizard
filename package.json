@@ -1,0 +1,57 @@
+{
+  "name": "@nia/wizard",
+  "version": "0.1.0",
+  "description": "CLI wizard to install Nia MCP server to your coding agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "nia-wizard": "./dist/bin.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/bin.js",
+    "try": "pnpm build && node dist/bin.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "nia",
+    "mcp",
+    "wizard",
+    "cli",
+    "cursor",
+    "claude",
+    "vscode",
+    "ai",
+    "coding-agent"
+  ],
+  "author": "Nozomio",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nozomio/nia-wizard"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "chalk": "^5.4.1",
+    "dotenv": "^17.2.3",
+    "jsonc-parser": "^3.3.1",
+    "open": "^10.1.0",
+    "yargs": "^17.7.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/yargs": "^17.0.33",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
