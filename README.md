@@ -20,7 +20,7 @@ This will:
 ### With npx (if you have Node.js)
 
 ```bash
-npx @nia/wizard
+npx nia-wizard
 ```
 
 ### With API Key
@@ -30,7 +30,7 @@ npx @nia/wizard
 curl -fsSL https://install.trynia.ai | sh -s -- nk_your_api_key
 
 # Via npx
-npx @nia/wizard nk_your_api_key
+npx nia-wizard nk_your_api_key
 ```
 
 ### With API Key

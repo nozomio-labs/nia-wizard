@@ -1,5 +1,5 @@
 {
-  "name": "@nia/wizard",
+  "name": "nia-wizard",
   "version": "0.1.0",
   "description": "CLI wizard to install Nia MCP server to your coding agents",
   "type": "module",
