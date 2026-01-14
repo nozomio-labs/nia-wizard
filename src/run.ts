@@ -70,12 +70,17 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     const outroMessage = `
 ${chalk.green('✓ Nia MCP Server installed!')}
 
-${chalk.cyan('Next steps:')}
-  1. Restart your coding agent(s) to load Nia
-  2. Try asking: ${chalk.yellow('"Index the React documentation"')}
-  3. Or: ${chalk.yellow('"Search the Chromium codebase for layout engine"')}
+${chalk.cyan('Get started:')}
+  • Browse pre-indexed sources: ${chalk.cyan('https://app.trynia.ai/explore')}
+  • Or index your own repos, docs, and papers
 
-${chalk.dim('Learn more: https://docs.trynia.ai')}
+${chalk.cyan('Try in your coding agent:')}
+  ${chalk.yellow('"List my indexed sources"')}
+  ${chalk.yellow('"Search vercel/ai-sdk for streaming"')}
+  ${chalk.yellow('"Run deep research on MCP protocols"')}
+
+${chalk.dim('Using as API?')} ${chalk.cyan('https://docs.trynia.ai/api-guide')}
+${chalk.dim('Follow us:')} ${chalk.cyan('https://x.com/nozomioai')}
 `;
     clack.outro(outroMessage);
   } else {
