@@ -16,7 +16,45 @@ export class RooCodeMCPClient extends MCPClient {
   }
 
   async getConfigPath(): Promise<string> {
-    return path.join(os.homedir(), '.roo-code', 'mcp.json');
+    const platform = process.platform;
+
+    if (platform === 'darwin') {
+      return path.join(
+        os.homedir(),
+        'Library',
+        'Application Support',
+        'Code',
+        'User',
+        'globalStorage',
+        'rooveterinaryinc.roo-cline',
+        'settings',
+        'mcp_settings.json',
+      );
+    }
+
+    if (platform === 'win32') {
+      return path.join(
+        process.env.APPDATA || '',
+        'Code',
+        'User',
+        'globalStorage',
+        'rooveterinaryinc.roo-cline',
+        'settings',
+        'mcp_settings.json',
+      );
+    }
+
+    // Linux
+    return path.join(
+      os.homedir(),
+      '.config',
+      'Code',
+      'User',
+      'globalStorage',
+      'rooveterinaryinc.roo-cline',
+      'settings',
+      'mcp_settings.json',
+    );
   }
 
   getServerPropertyName(): string {

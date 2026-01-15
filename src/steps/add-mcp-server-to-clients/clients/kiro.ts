@@ -17,7 +17,7 @@ export class KiroMCPClient extends MCPClient {
   }
 
   async getConfigPath(): Promise<string> {
-    return path.join(os.homedir(), '.kiro', 'mcp.json');
+    return path.join(os.homedir(), '.kiro', 'settings', 'mcp.json');
   }
 
   getServerPropertyName(): string {

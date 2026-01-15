@@ -18,7 +18,45 @@ export class ClineMCPClient extends MCPClient {
   }
 
   async getConfigPath(): Promise<string> {
-    return path.join(os.homedir(), '.cline', 'mcp_settings.json');
+    const platform = process.platform;
+
+    if (platform === 'darwin') {
+      return path.join(
+        os.homedir(),
+        'Library',
+        'Application Support',
+        'Code',
+        'User',
+        'globalStorage',
+        'saoudrizwan.claude-dev',
+        'settings',
+        'cline_mcp_settings.json',
+      );
+    }
+
+    if (platform === 'win32') {
+      return path.join(
+        process.env.APPDATA || '',
+        'Code',
+        'User',
+        'globalStorage',
+        'saoudrizwan.claude-dev',
+        'settings',
+        'cline_mcp_settings.json',
+      );
+    }
+
+    // Linux
+    return path.join(
+      os.homedir(),
+      '.config',
+      'Code',
+      'User',
+      'globalStorage',
+      'saoudrizwan.claude-dev',
+      'settings',
+      'cline_mcp_settings.json',
+    );
   }
 
   getServerPropertyName(): string {
