@@ -164,10 +164,8 @@ export async function addMCPServerToClientsStep(
   const supportedClients = await getSupportedClients();
 
   if (supportedClients.length === 0) {
-    clack.log.warn('No supported coding agents detected on this system.');
-    clack.log.info(
-      'Supported agents: Cursor, Claude Code, Claude Desktop, VS Code, Windsurf, Cline, Continue, Zed, JetBrains, Antigravity, Trae, Roo Code, Kilo Code, Gemini CLI, Opencode, Qodo Gen, Qwen Coder, Visual Studio, Crush, Copilot CLI, Copilot Agent, Augment, Kiro, LM Studio, BoltAI, Perplexity, Warp, Amazon Q, Codex, Factory, Amp, Vibe',
-    );
+    clack.log.warn('No coding agents detected on this system.');
+    clack.log.info('Run the wizard again and select "Manual Setup" to view configs for manual installation.');
     return [];
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "nia-wizard",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "CLI wizard to install Nia MCP server to your coding agents",
   "type": "module",
   "main": "dist/index.js",
