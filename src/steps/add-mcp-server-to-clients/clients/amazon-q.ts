@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class AmazonQMCPClient extends MCPClient {
   name = 'Amazon Q Developer CLI';
+  docsUrl = 'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line-mcp-configuration.html';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

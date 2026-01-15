@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class WarpMCPClient extends MCPClient {
   name = 'Warp';
+  docsUrl = 'https://docs.warp.dev/knowledge-and-collaboration/mcp';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

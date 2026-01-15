@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class JetBrainsMCPClient extends MCPClient {
   name = 'JetBrains';
+  docsUrl = 'https://www.jetbrains.com/help/idea/mcp-server.html';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     // Check for common JetBrains config directories

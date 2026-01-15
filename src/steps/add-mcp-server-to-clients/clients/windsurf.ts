@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class WindsurfMCPClient extends MCPClient {
   name = 'Windsurf';
+  docsUrl = 'https://docs.windsurf.com/windsurf/cascade/mcp';
 
   async isClientSupported(): Promise<boolean> {
     const platform = process.platform;

@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class ContinueMCPClient extends MCPClient {
   name = 'Continue.dev';
+  docsUrl = 'https://docs.continue.dev/customize/mcp-tools';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

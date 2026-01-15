@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class QwenCoderMCPClient extends MCPClient {
   name = 'Qwen Coder';
+  docsUrl = 'https://qwenlm.github.io/blog/qwen2.5-coder-family/';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

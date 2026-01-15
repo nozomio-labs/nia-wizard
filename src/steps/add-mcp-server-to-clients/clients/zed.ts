@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class ZedMCPClient extends MCPClient {
   name = 'Zed';
+  docsUrl = 'https://zed.dev/docs/ai/mcp';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     const platform = process.platform;

@@ -9,6 +9,8 @@ import { debug } from '../../../utils/debug.js';
 
 export class ClaudeCodeMCPClient extends MCPClient {
   name = 'Claude Code';
+  docsUrl = 'https://docs.anthropic.com/en/docs/claude-code/mcp-servers';
+  usesCLI = true;
   private claudeBinaryPath: string | null = null;
 
   async isClientSupported(): Promise<boolean> {

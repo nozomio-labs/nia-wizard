@@ -44,6 +44,48 @@ export { MCPClient } from './MCPClient.js';
 export * from './defaults.js';
 
 /**
+ * Get all MCP clients (regardless of whether they're supported on this system)
+ */
+export function getAllClients(): MCPClient[] {
+  return [
+    // Core / popular clients first
+    new CursorMCPClient(),
+    new ClaudeCodeMCPClient(),
+    new ClaudeDesktopMCPClient(),
+    new VSCodeMCPClient(),
+    new WindsurfMCPClient(),
+    new ClineMCPClient(),
+    new ContinueMCPClient(),
+    new ZedMCPClient(),
+    new JetBrainsMCPClient(),
+    // Additional clients
+    new AntigravityMCPClient(),
+    new TraeMCPClient(),
+    new RooCodeMCPClient(),
+    new KiloCodeMCPClient(),
+    new GeminiCLIMCPClient(),
+    new OpencodeMCPClient(),
+    new QodoGenMCPClient(),
+    new QwenCoderMCPClient(),
+    new VisualStudioMCPClient(),
+    new CrushMCPClient(),
+    new CopilotCLIMCPClient(),
+    new CopilotAgentMCPClient(),
+    new AugmentMCPClient(),
+    new KiroMCPClient(),
+    new LMStudioMCPClient(),
+    new BoltAIMCPClient(),
+    new PerplexityMCPClient(),
+    new WarpMCPClient(),
+    new AmazonQMCPClient(),
+    new CodexMCPClient(),
+    new FactoryMCPClient(),
+    new AmpMCPClient(),
+    new VibeMCPClient(),
+  ];
+}
+
+/**
  * Get all MCP clients that are supported on this system
  */
 export async function getSupportedClients(): Promise<MCPClient[]> {

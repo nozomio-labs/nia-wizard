@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class AugmentMCPClient extends MCPClient {
   name = 'Augment Code';
+  docsUrl = 'https://docs.augmentcode.com/setup-augment/mcp';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     // Augment is a VS Code extension, harder to detect

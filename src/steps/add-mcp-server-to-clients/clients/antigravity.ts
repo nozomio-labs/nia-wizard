@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class AntigravityMCPClient extends MCPClient {
   name = 'Google Antigravity';
+  docsUrl = 'https://developers.google.com/gemini-code-assist/docs/use-mcp-servers';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

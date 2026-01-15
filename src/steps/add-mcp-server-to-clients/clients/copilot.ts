@@ -9,6 +9,7 @@ const COPILOT_TOOLS = ['index', 'search', 'manage_resource', 'nia_web_search', '
 
 export class CopilotCLIMCPClient extends MCPClient {
   name = 'Copilot CLI';
+  docsUrl = 'https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp/extend-copilot-chat-with-mcp';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();
@@ -53,6 +54,7 @@ export class CopilotCLIMCPClient extends MCPClient {
 
 export class CopilotAgentMCPClient extends MCPClient {
   name = 'Copilot Coding Agent';
+  docsUrl = 'https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp/extend-copilot-chat-with-mcp';
 
   async isClientSupported(): Promise<boolean> {
     // Check if .github directory exists (repo-level config)

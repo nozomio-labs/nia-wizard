@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class TraeMCPClient extends MCPClient {
   name = 'Trae';
+  docsUrl = 'https://docs.trae.ai/ide/model-context-protocol';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

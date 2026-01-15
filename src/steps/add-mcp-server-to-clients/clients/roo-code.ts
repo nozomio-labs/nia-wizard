@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class RooCodeMCPClient extends MCPClient {
   name = 'Roo Code';
+  docsUrl = 'https://docs.roocode.com/features/mcp/using-mcp-in-roo';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

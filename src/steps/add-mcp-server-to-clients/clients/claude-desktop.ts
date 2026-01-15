@@ -6,6 +6,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class ClaudeDesktopMCPClient extends MCPClient {
   name = 'Claude Desktop';
+  docsUrl = 'https://modelcontextprotocol.io/quickstart/user';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     const platform = process.platform;

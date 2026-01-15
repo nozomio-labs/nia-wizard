@@ -6,6 +6,9 @@ import { debug } from '../../../utils/debug.js';
 
 export class AmpMCPClient extends MCPClient {
   name = 'Amp';
+  docsUrl = 'https://ampcode.com/docs/customize/mcp';
+  usesCLI = true;
+  note = 'Only supports remote mode, uses CLI configuration';
 
   async isClientSupported(): Promise<boolean> {
     try {

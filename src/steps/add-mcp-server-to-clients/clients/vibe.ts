@@ -8,6 +8,8 @@ import { debug } from '../../../utils/debug.js';
 
 export class VibeMCPClient extends MCPClient {
   name = 'Mistral Vibe CLI';
+  docsUrl = 'https://github.com/mistralai/mistral-vibe?tab=readme-ov-file#mcp-server-configuration';
+  note = 'Only supports remote mode, uses TOML config';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

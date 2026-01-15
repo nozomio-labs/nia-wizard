@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class LMStudioMCPClient extends MCPClient {
   name = 'LM Studio';
+  docsUrl = 'https://lmstudio.ai/docs/app/mcp';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

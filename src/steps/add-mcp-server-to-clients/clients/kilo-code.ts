@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class KiloCodeMCPClient extends MCPClient {
   name = 'Kilo Code';
+  docsUrl = 'https://kilo.ai/docs/features/mcp/using-mcp-in-kilo-code';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

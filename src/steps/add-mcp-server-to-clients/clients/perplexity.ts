@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class PerplexityMCPClient extends MCPClient {
   name = 'Perplexity Desktop';
+  docsUrl = 'https://docs.perplexity.ai/guides/mcp-server';
+  note = 'Only supports local (stdio) mode, macOS only';
 
   async isClientSupported(): Promise<boolean> {
     if (process.platform !== 'darwin') {

@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class GeminiCLIMCPClient extends MCPClient {
   name = 'Gemini CLI';
+  docsUrl = 'https://googlegemini.com/docs/gemini-cli/tools/mcp-server';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

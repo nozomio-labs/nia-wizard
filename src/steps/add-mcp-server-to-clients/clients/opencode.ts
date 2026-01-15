@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class OpencodeMCPClient extends MCPClient {
   name = 'Opencode';
+  docsUrl = 'https://opencode.ai/docs/mcp-servers/';
+  note = 'Also available as dedicated plugin: bunx nia-opencode@latest install (Demo: https://x.com/arlanr/status/1879212916125777962)';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

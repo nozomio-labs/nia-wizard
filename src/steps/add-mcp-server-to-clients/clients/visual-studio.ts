@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class VisualStudioMCPClient extends MCPClient {
   name = 'Visual Studio 2022';
+  docsUrl = 'https://learn.microsoft.com/en-us/visualstudio/ide/mcp-servers';
 
   async isClientSupported(): Promise<boolean> {
     // Visual Studio is Windows only

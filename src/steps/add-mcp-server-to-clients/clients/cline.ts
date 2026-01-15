@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class ClineMCPClient extends MCPClient {
   name = 'Cline';
+  docsUrl = 'https://docs.cline.bot/mcp/configuring-mcp-servers';
 
   async isClientSupported(): Promise<boolean> {
     // Cline is a VS Code extension, check for its config directory

@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class QodoGenMCPClient extends MCPClient {
   name = 'Qodo Gen';
+  docsUrl = 'https://docs.qodo.ai/qodo-documentation/qodo-gen/tools-mcps/agentic-tools-mcps';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

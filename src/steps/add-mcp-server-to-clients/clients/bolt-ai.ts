@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class BoltAIMCPClient extends MCPClient {
   name = 'BoltAI';
+  docsUrl = 'https://docs.boltai.com/docs/plugins/mcp-servers';
+  note = 'Only supports local (stdio) mode, macOS only';
 
   async isClientSupported(): Promise<boolean> {
     if (process.platform !== 'darwin') {

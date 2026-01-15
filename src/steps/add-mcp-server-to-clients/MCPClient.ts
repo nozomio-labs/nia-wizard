@@ -14,6 +14,21 @@ export abstract class MCPClient {
   abstract isClientSupported(): Promise<boolean>;
 
   /**
+   * Documentation URL for this client's MCP setup
+   */
+  docsUrl?: string;
+
+  /**
+   * Special notes for this client (e.g., alternative install methods)
+   */
+  note?: string;
+
+  /**
+   * Whether this client uses CLI commands instead of config files
+   */
+  usesCLI?: boolean;
+
+  /**
    * Check if server is already installed
    */
   async isServerInstalled(): Promise<boolean> {

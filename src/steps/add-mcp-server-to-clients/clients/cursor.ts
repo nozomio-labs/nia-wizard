@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class CursorMCPClient extends MCPClient {
   name = 'Cursor';
+  docsUrl = 'https://cursor.com/docs/context/mcp';
 
   async isClientSupported(): Promise<boolean> {
     // Cursor is available on macOS and Windows
@@ -40,6 +41,7 @@ export class CursorMCPClient extends MCPClient {
     }
     // Local mode uses stdio
     return {
+      type: 'stdio',
       command: 'pipx',
       args: ['run', '--no-cache', 'nia-mcp-server'],
       env: {

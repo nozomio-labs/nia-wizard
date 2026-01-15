@@ -7,6 +7,8 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class KiroMCPClient extends MCPClient {
   name = 'Kiro';
+  docsUrl = 'https://kiro.dev/docs/mcp/';
+  note = 'Only supports local (stdio) mode';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class VSCodeMCPClient extends MCPClient {
   name = 'VS Code';
+  docsUrl = 'https://code.visualstudio.com/docs/copilot/chat/mcp-servers';
 
   async isClientSupported(): Promise<boolean> {
     const platform = process.platform;

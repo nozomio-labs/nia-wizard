@@ -6,6 +6,9 @@ import { debug } from '../../../utils/debug.js';
 
 export class FactoryMCPClient extends MCPClient {
   name = 'Factory';
+  docsUrl = 'https://docs.factory.ai/cli/configuration/mcp';
+  usesCLI = true;
+  note = 'Uses droid CLI for configuration';
 
   async isClientSupported(): Promise<boolean> {
     try {

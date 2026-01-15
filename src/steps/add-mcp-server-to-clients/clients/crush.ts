@@ -7,6 +7,7 @@ import type { MCPServerConfig } from '../../../utils/types.js';
 
 export class CrushMCPClient extends MCPClient {
   name = 'Crush';
+  docsUrl = 'https://github.com/charmbracelet/crush';
 
   async isClientSupported(): Promise<boolean> {
     const configPath = await this.getConfigPath();

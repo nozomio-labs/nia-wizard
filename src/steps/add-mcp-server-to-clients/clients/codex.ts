@@ -6,6 +6,9 @@ import { debug } from '../../../utils/debug.js';
 
 export class CodexMCPClient extends MCPClient {
   name = 'Codex CLI';
+  docsUrl = 'https://developers.openai.com/codex/mcp/';
+  usesCLI = true;
+  note = 'Only supports local mode, uses CLI configuration';
 
   async isClientSupported(): Promise<boolean> {
     try {
