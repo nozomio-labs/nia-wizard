@@ -35,6 +35,9 @@ export class ClaudeCodeMCPClient extends MCPClient {
 
     const possiblePaths = [
       path.join(os.homedir(), '.claude', 'local', 'claude'),
+      path.join(os.homedir(), '.bun', 'bin', 'claude'),
+      path.join(os.homedir(), '.npm', 'bin', 'claude'),
+      path.join(os.homedir(), '.yarn', 'bin', 'claude'),
       '/usr/local/bin/claude',
       '/opt/homebrew/bin/claude',
     ];
