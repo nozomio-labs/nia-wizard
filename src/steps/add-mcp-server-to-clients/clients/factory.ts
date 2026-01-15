@@ -1,4 +1,7 @@
 import { execSync, spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { MCPClient, SERVER_NAME } from '../MCPClient.js';
 import { REMOTE_MCP_URL, NIA_API_URL } from '../defaults.js';
 import type { MCPClientResult } from '../../../utils/types.js';
@@ -9,10 +12,40 @@ export class FactoryMCPClient extends MCPClient {
   docsUrl = 'https://docs.factory.ai/cli/configuration/mcp';
   usesCLI = true;
   note = 'Uses droid CLI for configuration';
+  private droidBinaryPath: string | null = null;
+
+  private findDroidBinary(): string | null {
+    if (this.droidBinaryPath) return this.droidBinaryPath;
+
+    const possiblePaths = [
+      path.join(os.homedir(), '.bun', 'bin', 'droid'),
+      path.join(os.homedir(), '.npm', 'bin', 'droid'),
+      path.join(os.homedir(), '.yarn', 'bin', 'droid'),
+      '/usr/local/bin/droid',
+      '/opt/homebrew/bin/droid',
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        this.droidBinaryPath = p;
+        return p;
+      }
+    }
+
+    try {
+      execSync('command -v droid', { stdio: 'pipe' });
+      this.droidBinaryPath = 'droid';
+      return 'droid';
+    } catch {
+      return null;
+    }
+  }
 
   async isClientSupported(): Promise<boolean> {
+    const binary = this.findDroidBinary();
+    if (!binary) return false;
     try {
-      execSync('droid --version', { stdio: 'ignore' });
+      execSync(`${binary} --version`, { stdio: 'ignore' });
       return true;
     } catch {
       return false;
@@ -28,8 +61,10 @@ export class FactoryMCPClient extends MCPClient {
   }
 
   async isServerInstalled(): Promise<boolean> {
+    const binary = this.findDroidBinary();
+    if (!binary) return false;
     try {
-      const result = spawnSync('droid', ['mcp', 'list'], {
+      const result = spawnSync(binary, ['mcp', 'list'], {
         encoding: 'utf-8',
         stdio: 'pipe',
       });
@@ -43,6 +78,9 @@ export class FactoryMCPClient extends MCPClient {
     apiKey: string,
     mode: 'local' | 'remote',
   ): Promise<MCPClientResult> {
+    const binary = this.findDroidBinary();
+    if (!binary) return { success: false, error: 'Factory (droid) not found' };
+
     try {
       let args: string[];
 
@@ -62,8 +100,8 @@ export class FactoryMCPClient extends MCPClient {
         ];
       }
 
-      debug(`Running: droid ${args.join(' ')}`);
-      const result = spawnSync('droid', args, { stdio: 'pipe' });
+      debug(`Running: ${binary} ${args.join(' ')}`);
+      const result = spawnSync(binary, args, { stdio: 'pipe' });
 
       if (result.error || result.status !== 0) {
         return { success: false, error: 'Failed to add server to Factory' };
@@ -77,8 +115,11 @@ export class FactoryMCPClient extends MCPClient {
   }
 
   async removeServer(): Promise<MCPClientResult> {
+    const binary = this.findDroidBinary();
+    if (!binary) return { success: false, error: 'Factory (droid) not found' };
+
     try {
-      const result = spawnSync('droid', ['mcp', 'remove', SERVER_NAME], {
+      const result = spawnSync(binary, ['mcp', 'remove', SERVER_NAME], {
         stdio: 'pipe',
       });
 

@@ -1,4 +1,7 @@
 import { execSync, spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { MCPClient, SERVER_NAME } from '../MCPClient.js';
 import { NIA_API_URL } from '../defaults.js';
 import type { MCPClientResult } from '../../../utils/types.js';
@@ -9,10 +12,40 @@ export class CodexMCPClient extends MCPClient {
   docsUrl = 'https://developers.openai.com/codex/mcp/';
   usesCLI = true;
   note = 'Only supports local mode, uses CLI configuration';
+  private codexBinaryPath: string | null = null;
+
+  private findCodexBinary(): string | null {
+    if (this.codexBinaryPath) return this.codexBinaryPath;
+
+    const possiblePaths = [
+      path.join(os.homedir(), '.bun', 'bin', 'codex'),
+      path.join(os.homedir(), '.npm', 'bin', 'codex'),
+      path.join(os.homedir(), '.yarn', 'bin', 'codex'),
+      '/usr/local/bin/codex',
+      '/opt/homebrew/bin/codex',
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        this.codexBinaryPath = p;
+        return p;
+      }
+    }
+
+    try {
+      execSync('command -v codex', { stdio: 'pipe' });
+      this.codexBinaryPath = 'codex';
+      return 'codex';
+    } catch {
+      return null;
+    }
+  }
 
   async isClientSupported(): Promise<boolean> {
+    const binary = this.findCodexBinary();
+    if (!binary) return false;
     try {
-      execSync('codex --version', { stdio: 'ignore' });
+      execSync(`${binary} --version`, { stdio: 'ignore' });
       return true;
     } catch {
       return false;
@@ -28,8 +61,10 @@ export class CodexMCPClient extends MCPClient {
   }
 
   async isServerInstalled(): Promise<boolean> {
+    const binary = this.findCodexBinary();
+    if (!binary) return false;
     try {
-      const result = spawnSync('codex', ['mcp', 'list', '--json'], {
+      const result = spawnSync(binary, ['mcp', 'list', '--json'], {
         encoding: 'utf-8',
       });
 
@@ -51,6 +86,9 @@ export class CodexMCPClient extends MCPClient {
     apiKey: string,
     _mode: 'local' | 'remote',
   ): Promise<MCPClientResult> {
+    const binary = this.findCodexBinary();
+    if (!binary) return { success: false, error: 'Codex CLI not found' };
+
     // Codex only supports local mode
     const args = [
       'mcp',
@@ -67,8 +105,8 @@ export class CodexMCPClient extends MCPClient {
       'nia-mcp-server',
     ];
 
-    debug(`Running: codex ${args.join(' ')}`);
-    const result = spawnSync('codex', args, { stdio: 'ignore' });
+    debug(`Running: ${binary} ${args.join(' ')}`);
+    const result = spawnSync(binary, args, { stdio: 'ignore' });
 
     if (result.error || result.status !== 0) {
       return { success: false, error: 'Failed to add server to Codex CLI' };
@@ -78,7 +116,10 @@ export class CodexMCPClient extends MCPClient {
   }
 
   async removeServer(): Promise<MCPClientResult> {
-    const result = spawnSync('codex', ['mcp', 'remove', SERVER_NAME], {
+    const binary = this.findCodexBinary();
+    if (!binary) return { success: false, error: 'Codex CLI not found' };
+
+    const result = spawnSync(binary, ['mcp', 'remove', SERVER_NAME], {
       stdio: 'ignore',
     });
 
