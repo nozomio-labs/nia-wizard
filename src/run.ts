@@ -93,10 +93,10 @@ async function runManualMode(): Promise<void> {
     console.log(chalk.cyan('  CLI commands:'));
     if (client.name === 'Claude Code') {
       console.log(chalk.dim('    Local mode:'));
-      console.log(`      claude mcp add nia -e "NIA_API_KEY=${exampleApiKey}" -e "NIA_API_URL=https://apigcp.trynia.ai/" -s user -- pipx run --no-cache nia-mcp-server`);
+      console.log(`      claude mcp add -e "NIA_API_KEY=${exampleApiKey}" -e "NIA_API_URL=https://apigcp.trynia.ai/" -s user nia -- pipx run --no-cache nia-mcp-server`);
       console.log('');
       console.log(chalk.dim('    Remote mode:'));
-      console.log(`      claude mcp add --transport http nia ${REMOTE_MCP_URL} --header "Authorization: Bearer ${exampleApiKey}" -s user`);
+      console.log(`      claude mcp add --transport http --header "Authorization: Bearer ${exampleApiKey}" -s user nia "${REMOTE_MCP_URL}"`);
     } else if (client.name === 'Codex CLI') {
       console.log(chalk.dim('    Local mode:'));
       console.log(`      codex mcp add nia --env "NIA_API_KEY=${exampleApiKey}" --env "NIA_API_URL=https://apigcp.trynia.ai/" -- pipx run --no-cache nia-mcp-server`);
