@@ -190,7 +190,7 @@ export async function addMCPServerToClientsStep(
         options: allClients.map((client) => ({
           value: client.name,
           label: client.name,
-          hint: supportedNames.has(client.name) ? undefined : 'not detected',
+          hint: supportedNames.has(client.name) ? undefined : 'not detected - rerun wizard → Manual Setup',
         })),
         initialValues: allClients
           .filter((c) => supportedNames.has(c.name))
