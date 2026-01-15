@@ -160,38 +160,46 @@ export async function addMCPServerToClientsStep(
 ): Promise<string[]> {
   const { apiKey, mode, ci = false } = options;
 
-  // Get supported clients
-  const supportedClients = await getSupportedClients();
+  // Get all clients and check which are supported
+  const allClients = getAllClients();
+  const supportedNames = new Set<string>();
 
-  if (supportedClients.length === 0) {
-    clack.log.warn('No coding agents detected on this system.');
-    clack.log.info('Run the wizard again and select "Manual Setup" to view configs for manual installation.');
-    return [];
+  for (const client of allClients) {
+    if (await client.isClientSupported()) {
+      supportedNames.add(client.name);
+    }
   }
 
-  // In CI mode, auto-select all clients
+  // In CI mode, auto-select only detected clients
   let selectedClients: MCPClient[];
 
   if (ci) {
-    selectedClients = supportedClients;
+    selectedClients = allClients.filter((c) => supportedNames.has(c.name));
+    if (selectedClients.length === 0) {
+      clack.log.warn('No coding agents detected on this system.');
+      return [];
+    }
     clack.log.info(
       `Auto-selecting ${selectedClients.length} client(s): ${selectedClients.map((c) => c.name).join(', ')}`,
     );
   } else {
-    // Let user select which clients to install to
+    // Let user select which clients to install to - show ALL, mark undetected
     const selectedNames = await abortIfCancelled(
       clack.multiselect({
         message: 'Select which coding agents to install Nia to:',
-        options: supportedClients.map((client) => ({
+        options: allClients.map((client) => ({
           value: client.name,
           label: client.name,
+          hint: supportedNames.has(client.name) ? undefined : 'not detected',
         })),
-        initialValues: supportedClients.map((client) => client.name),
-        required: true,
+        initialValues: allClients
+          .filter((c) => supportedNames.has(c.name))
+          .map((c) => c.name),
+        required: false,
       }),
     );
 
-    selectedClients = supportedClients.filter((client) =>
+    selectedClients = allClients.filter((client) =>
       selectedNames.includes(client.name),
     );
   }
