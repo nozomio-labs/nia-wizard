@@ -16,6 +16,22 @@ export class AntigravityMCPClient extends MCPClient {
   }
 
   async getConfigPath(): Promise<string> {
+    const platform = process.platform;
+
+    if (platform === 'win32') {
+      return path.join(
+        process.env.APPDATA || '',
+        'Gemini',
+        'Antigravity',
+        'mcp_config.json',
+      );
+    }
+
+    if (platform === 'linux') {
+      return path.join(os.homedir(), '.config', 'gemini', 'antigravity', 'mcp_config.json');
+    }
+
+    // macOS
     return path.join(os.homedir(), '.gemini', 'antigravity', 'mcp_config.json');
   }
 

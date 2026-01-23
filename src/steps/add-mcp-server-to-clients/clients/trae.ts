@@ -16,9 +16,22 @@ export class TraeMCPClient extends MCPClient {
   }
 
   async getConfigPath(): Promise<string> {
-    if (process.platform === 'darwin') {
+    const platform = process.platform;
+
+    if (platform === 'darwin') {
       return path.join(os.homedir(), 'Library', 'Application Support', 'Trae', 'User', 'mcp.json');
     }
+
+    if (platform === 'win32') {
+      return path.join(
+        process.env.APPDATA || '',
+        'Trae',
+        'User',
+        'mcp.json',
+      );
+    }
+
+    // Linux
     return path.join(os.homedir(), '.config', 'trae', 'mcp.json');
   }
 

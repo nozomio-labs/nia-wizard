@@ -10,9 +10,9 @@ export class CursorMCPClient extends MCPClient {
   docsUrl = 'https://cursor.com/docs/context/mcp';
 
   async isClientSupported(): Promise<boolean> {
-    // Cursor is available on macOS and Windows
+    // Cursor is available on macOS, Windows, and Linux
     const platform = process.platform;
-    if (platform !== 'darwin' && platform !== 'win32') {
+    if (platform !== 'darwin' && platform !== 'win32' && platform !== 'linux') {
       return false;
     }
 
@@ -25,6 +25,21 @@ export class CursorMCPClient extends MCPClient {
   }
 
   async getConfigPath(): Promise<string> {
+    const platform = process.platform;
+
+    if (platform === 'win32') {
+      return path.join(
+        process.env.APPDATA || '',
+        'Cursor',
+        'mcp.json',
+      );
+    }
+
+    if (platform === 'linux') {
+      return path.join(os.homedir(), '.config', 'cursor', 'mcp.json');
+    }
+
+    // macOS
     return path.join(os.homedir(), '.cursor', 'mcp.json');
   }
 
