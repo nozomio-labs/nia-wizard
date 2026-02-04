@@ -1,4 +1,8 @@
 import chalk from 'chalk';
+import { spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import clack from './utils/clack.js';
 import { printWelcome, getApiKey, askInstallMode, abortIfCancelled } from './utils/clack-utils.js';
 import { addMCPServerToClientsStep, getAllClients } from './steps/add-mcp-server-to-clients/index.js';
@@ -6,6 +10,31 @@ import { enableDebug } from './utils/debug.js';
 import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies.js';
 import type { WizardOptions } from './utils/types.js';
 import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
+
+/**
+ * Store API key for Nia skill to use
+ */
+function storeApiKey(apiKey: string): void {
+  const configDir = path.join(os.homedir(), '.config', 'nia');
+  const keyPath = path.join(configDir, 'api_key');
+
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(keyPath, apiKey, { mode: 0o600 });
+}
+
+/**
+ * Run skills installation via npx
+ */
+async function runSkillsInstall(): Promise<boolean> {
+  clack.log.info('Launching Nia skill installer...\n');
+
+  const result = spawnSync('npx', ['skills', 'add', 'nozomio-labs/nia-skill'], {
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  return result.status === 0;
+}
 
 /**
  * Run manual mode - show config without installing
@@ -126,84 +155,114 @@ export async function runWizard(options: WizardOptions): Promise<void> {
 
   printWelcome();
 
-  // First, ask what user wants to do
-  const wizardMode = await abortIfCancelled(
-    clack.select({
-      message: 'What would you like to do?',
+  // First, ask what user wants to do (multi-select)
+  const actions = await abortIfCancelled(
+    clack.multiselect({
+      message: 'What would you like to do? (space to select, enter to confirm)',
       options: [
         {
-          value: 'install' as const,
+          value: 'mcp' as const,
           label: 'Install Nia MCP Server',
-          hint: 'Automatically configure your coding agents',
+          hint: 'Add Nia to your coding agents via MCP',
+        },
+        {
+          value: 'skills' as const,
+          label: 'Install Nia Skill',
+          hint: 'Install via skills CLI',
         },
         {
           value: 'manual' as const,
           label: 'Manual Setup (View Config)',
-          hint: 'View configuration for manual setup or troubleshooting',
+          hint: 'View configuration for manual setup',
         },
       ],
-      initialValue: 'install' as const,
+      required: true,
     }),
   );
 
-  if (wizardMode === 'manual') {
+  // Handle manual-only case
+  if (actions.includes('manual') && actions.length === 1) {
     await runManualMode();
     return;
   }
 
-  // Step 1: Get API key
+  // Get API key (needed for both MCP and Skills)
   const apiKey = await getApiKey(options.apiKey);
 
-  // Step 2: Select install mode
-  let mode: 'local' | 'remote';
-  if (options.local !== undefined) {
-    mode = options.local ? 'local' : 'remote';
-    clack.log.info(`Using ${mode} mode`);
-  } else if (options.ci) {
-    mode = 'local';
-    clack.log.info('Using local mode (CI default)');
-  } else {
-    mode = await askInstallMode(true);
+  // Store API key for skills to use
+  storeApiKey(apiKey);
+  clack.log.success('API key saved');
+
+  let installedMcp = false;
+  let installedSkills = false;
+
+  // Run MCP installation if selected
+  if (actions.includes('mcp')) {
+    // Select install mode
+    let mode: 'local' | 'remote';
+    if (options.local !== undefined) {
+      mode = options.local ? 'local' : 'remote';
+      clack.log.info(`Using ${mode} mode`);
+    } else if (options.ci) {
+      mode = 'local';
+      clack.log.info('Using local mode (CI default)');
+    } else {
+      mode = await askInstallMode();
+    }
+
+    // If local mode, ensure dependencies are installed
+    if (mode === 'local') {
+      if (!dependenciesReady()) {
+        console.log('');
+        const depsOk = await ensureLocalDependencies();
+        if (!depsOk) {
+          // Dependencies failed, offer to switch to remote
+          clack.log.warn('Local mode requires additional dependencies.');
+          const switchToRemote = await clack.confirm({
+            message: 'Switch to remote mode instead?',
+            initialValue: true,
+          });
+
+          if (switchToRemote) {
+            mode = 'remote';
+            clack.log.info('Switched to remote mode');
+          } else {
+            clack.outro(chalk.yellow('Please install dependencies and try again.'));
+            process.exit(1);
+          }
+        }
+        console.log('');
+      } else {
+        clack.log.success('Dependencies ready');
+      }
+    }
+
+    // Install to clients
+    const installedClients = await addMCPServerToClientsStep({
+      apiKey,
+      mode,
+      ci: options.ci,
+    });
+
+    installedMcp = installedClients.length > 0;
   }
 
-  // Step 3: If local mode, ensure dependencies are installed
-  if (mode === 'local') {
-    if (!dependenciesReady()) {
-      console.log('');
-      const depsOk = await ensureLocalDependencies();
-      if (!depsOk) {
-        // Dependencies failed, offer to switch to remote
-        clack.log.warn('Local mode requires additional dependencies.');
-        const switchToRemote = await clack.confirm({
-          message: 'Switch to remote mode instead?',
-          initialValue: true,
-        });
-        
-        if (switchToRemote) {
-          mode = 'remote';
-          clack.log.info('Switched to remote mode');
-        } else {
-          clack.outro(chalk.yellow('Please install dependencies and try again.'));
-          process.exit(1);
-        }
-      }
-      console.log('');
+  // Run Skills installation if selected
+  if (actions.includes('skills')) {
+    console.log('');
+    const success = await runSkillsInstall();
+    if (success) {
+      clack.log.success('Nia skill installed!');
+      installedSkills = true;
     } else {
-      clack.log.success('Dependencies ready');
+      clack.log.warn('Skills installation may have failed');
     }
   }
 
-  // Step 4: Install to clients
-  const installedClients = await addMCPServerToClientsStep({
-    apiKey,
-    mode,
-    ci: options.ci,
-  });
-
   // Outro
-  if (installedClients.length > 0) {
+  if (installedMcp || installedSkills) {
     const outroMessage = `
-${chalk.green('✓ Nia MCP Server installed!')}
+${chalk.green('✓ Nia installed!')}
 
 ${chalk.cyan('Get started:')}
   • Browse pre-indexed sources: ${chalk.cyan('https://app.trynia.ai/explore')}

@@ -1,6 +1,6 @@
 # @nia/wizard
 
-CLI wizard to install Nia MCP server to your coding agents (Cursor, Claude, VS Code, etc.)
+CLI wizard to install Nia to your coding agents via MCP server or Skills.
 
 ## Installation
 
@@ -53,6 +53,17 @@ npx @nia/wizard mcp add --api-key nk_xxx --local
 # Remove Nia MCP server
 npx @nia/wizard mcp remove
 ```
+
+### Skills Installation
+
+The wizard also supports installing Nia as a skill via the skills CLI:
+
+```bash
+npx nia-wizard
+# Then select "Install Nia Skill"
+```
+
+This runs `npx skills add nozomio-labs/nia-skill` and stores your API key at `~/.config/nia/api_key`.
 
 ## Options
 
