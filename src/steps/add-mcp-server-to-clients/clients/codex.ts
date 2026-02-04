@@ -7,7 +7,7 @@ import { REMOTE_MCP_URL, NIA_API_URL } from '../defaults.js';
 import type { MCPClientResult } from '../../../utils/types.js';
 import { debug } from '../../../utils/debug.js';
 
-export class CodexMCPClient extends MCPClient {
+export class CodexCLIMCPClient extends MCPClient {
   name = 'Codex CLI';
   docsUrl = 'https://developers.openai.com/codex/mcp/';
   note = 'Uses CLI or config file (~/.codex/config.toml)';
@@ -236,3 +236,10 @@ NIA_API_URL = "${NIA_API_URL}"
     }
   }
 }
+
+export class CodexAppMCPClient extends CodexCLIMCPClient {
+  name = 'Codex App';
+}
+
+// Backwards compatibility alias
+export { CodexCLIMCPClient as CodexMCPClient };

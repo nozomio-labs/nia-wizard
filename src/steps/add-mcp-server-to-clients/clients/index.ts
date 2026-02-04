@@ -6,7 +6,7 @@ export { VSCodeMCPClient } from './vscode.js';
 export { WindsurfMCPClient } from './windsurf.js';
 export { ZedMCPClient } from './zed.js';
 export { ClineMCPClient } from './cline.js';
-export { CodexMCPClient } from './codex.js';
+export { CodexCLIMCPClient, CodexAppMCPClient, CodexMCPClient } from './codex.js';
 
 // Additional clients
 export { ContinueMCPClient } from './continue.js';

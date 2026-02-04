@@ -275,20 +275,20 @@ async function promptForManualApiKey(): Promise<string> {
  * Ask user to select installation mode
  */
 export async function askInstallMode(
-  defaultLocal = true,
+  defaultLocal = false,
 ): Promise<'local' | 'remote'> {
   const mode = await abortIfCancelled(
     clack.select({
       message: 'Select installation mode:',
       options: [
         {
-          value: 'local' as const,
-          label: 'Local',
-          hint: 'Requires pipx to be installed',
+          value: 'remote' as const,
+          label: 'Remote (Recommended)',
         },
         {
-          value: 'remote' as const,
-          label: 'Remote',
+          value: 'local' as const,
+          label: 'Local',
+          hint: 'Requires pipx',
         },
       ],
       initialValue: defaultLocal ? 'local' : 'remote',

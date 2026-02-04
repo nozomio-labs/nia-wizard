@@ -124,7 +124,8 @@ If you prefer, you can:
 | Agent | Config Location |
 |-------|-----------------|
 | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Codex | CLI: `codex mcp add` |
+| Codex CLI | CLI: `codex mcp add` |
+| Codex App | `~/.codex/config.toml` |
 | Zed | `~/.config/zed/settings.json` |
 | Augment | VS Code settings |
 | JetBrains | `~/.jetbrains/mcp.json` |
