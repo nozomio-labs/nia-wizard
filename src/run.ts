@@ -23,6 +23,32 @@ function storeApiKey(apiKey: string): void {
 }
 
 /**
+ * Run add-mcp installation via npx
+ */
+async function runAddMcpInstall(apiKey: string): Promise<boolean> {
+  clack.log.info('Launching add-mcp installer...\n');
+
+  const result = spawnSync(
+    'npx',
+    [
+      'add-mcp',
+      REMOTE_MCP_URL,
+      '--header',
+      `"Authorization: Bearer ${apiKey}"`,
+      '-g',
+      '--all',
+      '-y',
+    ],
+    {
+      stdio: 'inherit',
+      shell: true,
+    },
+  );
+
+  return result.status === 0;
+}
+
+/**
  * Run skills installation via npx
  */
 async function runSkillsInstall(): Promise<boolean> {
@@ -161,14 +187,19 @@ export async function runWizard(options: WizardOptions): Promise<void> {
       message: 'What would you like to do? (space to select, enter to confirm)',
       options: [
         {
-          value: 'mcp' as const,
-          label: 'Install Nia MCP Server',
-          hint: 'Add Nia to your coding agents via MCP',
+          value: 'add-mcp' as const,
+          label: 'Install via add-mcp',
+          hint: 'Quick install to all agents (new standard)',
         },
         {
           value: 'skills' as const,
           label: 'Install Nia Skill',
           hint: 'Install via skills CLI',
+        },
+        {
+          value: 'mcp' as const,
+          label: 'Install Nia MCP Server',
+          hint: 'Works, but migrating to add-mcp since it\'s a new standard',
         },
         {
           value: 'manual' as const,
@@ -193,8 +224,21 @@ export async function runWizard(options: WizardOptions): Promise<void> {
   storeApiKey(apiKey);
   clack.log.success('API key saved');
 
+  let installedAddMcp = false;
   let installedMcp = false;
   let installedSkills = false;
+
+  // Run add-mcp installation if selected
+  if (actions.includes('add-mcp')) {
+    console.log('');
+    const success = await runAddMcpInstall(apiKey);
+    if (success) {
+      clack.log.success('Nia installed via add-mcp!');
+      installedAddMcp = true;
+    } else {
+      clack.log.warn('add-mcp installation may have failed');
+    }
+  }
 
   // Run MCP installation if selected
   if (actions.includes('mcp')) {
@@ -260,7 +304,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
   }
 
   // Outro
-  if (installedMcp || installedSkills) {
+  if (installedAddMcp || installedMcp || installedSkills) {
     const outroMessage = `
 ${chalk.green('✓ Nia installed!')}
 
