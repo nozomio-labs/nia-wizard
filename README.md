@@ -65,6 +65,42 @@ npx nia-wizard
 
 This runs `npx skills add nozomio-labs/nia-skill` and stores your API key at `~/.config/nia/api_key`.
 
+For deterministic agent/CI usage:
+
+```bash
+npx nia-wizard skill add \
+  --api-key nk_xxx \
+  --source nozomio-labs/nia-skill \
+  --non-interactive \
+  --ci
+```
+
+Install globally for all detected agents:
+
+```bash
+npx nia-wizard skill add \
+  --api-key nk_xxx \
+  --all-agents \
+  --non-interactive \
+  --ci
+```
+
+Optional target-specific installation:
+
+```bash
+npx nia-wizard skill add \
+  --api-key nk_xxx \
+  --target codex \
+  --non-interactive \
+  --ci
+```
+
+Print the headless onboarding guide for agents:
+
+```bash
+npx nia-wizard agent-guide
+```
+
 ## Options
 
 | Option | Description |
@@ -74,6 +110,12 @@ This runs `npx skills add nozomio-labs/nia-skill` and stores your API key at `~/
 | `--debug` | Enable debug logging |
 | `--ci` | CI mode (skip prompts, use defaults) |
 | `--api-key`, `-k` | Nia API key |
+| `--non-interactive` | Fail fast instead of waiting for prompts (skill command) |
+| `--target` | Target coding agent for skill installation (skill command) |
+| `--all-agents` | Install to all detected agents in global scope (skill command) |
+| `--global` | Install to global user skills directories (skill command) |
+| `--source` | Skill source path/repo (skill command) |
+| `--json` | Print machine-readable result (skill command) |
 
 ## Authentication
 

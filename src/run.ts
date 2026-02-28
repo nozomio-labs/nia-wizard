@@ -1,8 +1,5 @@
 import chalk from 'chalk';
 import { spawnSync } from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 import clack from './utils/clack.js';
 import { printWelcome, getApiKey, askInstallMode, abortIfCancelled } from './utils/clack-utils.js';
 import { addMCPServerToClientsStep, getAllClients } from './steps/add-mcp-server-to-clients/index.js';
@@ -10,17 +7,7 @@ import { enableDebug } from './utils/debug.js';
 import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies.js';
 import type { WizardOptions } from './utils/types.js';
 import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
-
-/**
- * Store API key for Nia skill to use
- */
-function storeApiKey(apiKey: string): void {
-  const configDir = path.join(os.homedir(), '.config', 'nia');
-  const keyPath = path.join(configDir, 'api_key');
-
-  fs.mkdirSync(configDir, { recursive: true });
-  fs.writeFileSync(keyPath, apiKey, { mode: 0o600 });
-}
+import { storeApiKey } from './utils/api-key.js';
 
 /**
  * Run add-mcp installation via npx
