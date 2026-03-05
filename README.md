@@ -63,7 +63,10 @@ npx nia-wizard
 # Then select "Install Nia Skill"
 ```
 
-This runs `npx skills add nozomio-labs/nia-skill` and stores your API key at `~/.config/nia/api_key`.
+The wizard stores your API key at `~/.config/nia/api_key`.
+
+- Select `Install Nia Skill` to use the existing `skills` CLI flow.
+- Select `Install via Nia CLI` to auto-install `nia-cli` (if missing) and run `nia skill`.
 
 For deterministic agent/CI usage:
 

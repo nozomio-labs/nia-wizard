@@ -8,6 +8,7 @@ import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies
 import type { WizardOptions } from './utils/types.js';
 import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
 import { storeApiKey } from './utils/api-key.js';
+import { ensureNiaCliInstalled, runNiaSkill } from './utils/nia-cli.js';
 
 /**
  * Run add-mcp installation via npx
@@ -47,6 +48,19 @@ async function runSkillsInstall(): Promise<boolean> {
   });
 
   return result.status === 0;
+}
+
+/**
+ * Run Nia CLI skill installation
+ */
+async function runNiaCliSkillInstall(): Promise<boolean> {
+  clack.log.info('Launching Nia CLI skill installer...\n');
+
+  if (!ensureNiaCliInstalled()) {
+    return false;
+  }
+
+  return runNiaSkill();
 }
 
 /**
@@ -184,6 +198,11 @@ export async function runWizard(options: WizardOptions): Promise<void> {
           hint: 'Install via skills CLI',
         },
         {
+          value: 'nia-skill' as const,
+          label: 'Install via Nia CLI',
+          hint: 'Installs nia-cli if needed, then runs nia skill',
+        },
+        {
           value: 'mcp' as const,
           label: 'Install Nia MCP Server',
           hint: 'Works, but migrating to add-mcp since it\'s a new standard',
@@ -214,6 +233,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
   let installedAddMcp = false;
   let installedMcp = false;
   let installedSkills = false;
+  let installedNiaCliSkill = false;
 
   // Run add-mcp installation if selected
   if (actions.includes('add-mcp')) {
@@ -290,8 +310,19 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
+  if (actions.includes('nia-skill')) {
+    console.log('');
+    const success = await runNiaCliSkillInstall();
+    if (success) {
+      clack.log.success('Nia skill installed via Nia CLI!');
+      installedNiaCliSkill = true;
+    } else {
+      clack.log.warn('Nia CLI skill installation may have failed');
+    }
+  }
+
   // Outro
-  if (installedAddMcp || installedMcp || installedSkills) {
+  if (installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill) {
     const outroMessage = `
 ${chalk.green('✓ Nia installed!')}
 
