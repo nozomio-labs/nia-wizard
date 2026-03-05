@@ -8,7 +8,7 @@ import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies
 import type { WizardOptions } from './utils/types.js';
 import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
 import { storeApiKey } from './utils/api-key.js';
-import { ensureNiaCliInstalled, runNiaSkill } from './utils/nia-cli.js';
+import { ensureNiaCliInstalled, runNiaAuthLogin, runNiaSkill } from './utils/nia-cli.js';
 
 /**
  * Run add-mcp installation via npx
@@ -53,10 +53,16 @@ async function runSkillsInstall(): Promise<boolean> {
 /**
  * Run Nia CLI skill installation
  */
-async function runNiaCliSkillInstall(): Promise<boolean> {
+async function runNiaCliSkillInstall(apiKey: string): Promise<boolean> {
   clack.log.info('Launching Nia CLI skill installer...\n');
 
   if (!ensureNiaCliInstalled()) {
+    return false;
+  }
+
+  clack.log.info('Configuring nia-cli authentication...');
+  if (!runNiaAuthLogin(apiKey)) {
+    clack.log.warn('nia-cli authentication failed');
     return false;
   }
 
@@ -188,6 +194,11 @@ export async function runWizard(options: WizardOptions): Promise<void> {
       message: 'What would you like to do? (space to select, enter to confirm)',
       options: [
         {
+          value: 'nia-cli' as const,
+          label: 'Install Nia CLI',
+          hint: 'Installs nia CLI + skill',
+        },
+        {
           value: 'add-mcp' as const,
           label: 'Install via add-mcp',
           hint: 'Quick install to all agents (new standard)',
@@ -196,11 +207,6 @@ export async function runWizard(options: WizardOptions): Promise<void> {
           value: 'skills' as const,
           label: 'Install Nia Skill',
           hint: 'Install via skills CLI',
-        },
-        {
-          value: 'nia-cli' as const,
-          label: 'Install Nia CLI',
-          hint: 'Installs nia CLI + skill',
         },
         {
           value: 'mcp' as const,
@@ -312,19 +318,26 @@ export async function runWizard(options: WizardOptions): Promise<void> {
 
   if (actions.includes('nia-cli')) {
     console.log('');
-    const success = await runNiaCliSkillInstall();
+    const success = await runNiaCliSkillInstall(apiKey);
     if (success) {
-      clack.log.success('Nia CLI installed');
+      clack.log.success('Nia CLI skill installed!');
+      clack.log.message(chalk.dim('Run `nia skill` to manage your Nia CLI skill.'));
       installedNiaCliSkill = true;
     } else {
-      clack.log.warn('Nia CLI installation may have failed');
+      clack.log.warn('Nia CLI skill installation may have failed');
     }
   }
 
   // Outro
   if (installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill) {
+    const niaSkillManagementHint = installedNiaCliSkill
+      ? `\n${chalk.cyan('Nia CLI skill management:')} ${chalk.yellow('Run `nia skill` any time to manage your skill.')}\n`
+      : '';
+
     const outroMessage = `
 ${chalk.green('✓ Nia installed!')}
+
+${niaSkillManagementHint}
 
 ${chalk.cyan('Get started:')}
   • Browse pre-indexed sources: ${chalk.cyan('https://app.trynia.ai/explore')}

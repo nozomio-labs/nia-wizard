@@ -67,7 +67,7 @@ npx nia-wizard
 The wizard stores your API key at `~/.config/nia/api_key`.
 
 - Select `Install Nia Skill` to use the existing `skills` CLI flow.
-- Select `Install Nia CLI` to auto-install `nia-cli` and run `nia skill`.
+- Select `Install Nia CLI` to auto-install `nia-cli`, run `nia auth login --api-key ...`, and then run `nia skill`.
 
 For deterministic agent/CI usage:
 

@@ -24,15 +24,10 @@ export function isNiaCliInstalled(): boolean {
 }
 
 export function ensureNiaCliInstalled(): boolean {
-  const checkSpinner = clack.spinner();
-  checkSpinner.start('Checking for nia CLI...');
-
   if (isNiaCliInstalled()) {
-    checkSpinner.stop('nia CLI found');
     return true;
   }
 
-  checkSpinner.stop('nia CLI not found');
   clack.log.info('Installing nia-cli globally with npm...');
 
   const installSpinner = clack.spinner();
@@ -78,6 +73,31 @@ export function runNiaSkill(): boolean {
     stdio: 'inherit',
     shell: false,
   });
+
+  return fallbackResult.status === 0;
+}
+
+export function runNiaAuthLogin(apiKey: string): boolean {
+  const authResult = spawnSync('nia', ['auth', 'login', '--api-key', apiKey], {
+    stdio: 'inherit',
+    shell: false,
+  });
+
+  if (authResult.status === 0) {
+    return true;
+  }
+
+  debug('nia auth login failed, falling back to npx nia-cli auth login', authResult.status);
+  clack.log.warn('`nia auth login` failed. Trying `npx -y nia-cli auth login`...');
+
+  const fallbackResult = spawnSync(
+    npxCommand(),
+    ['-y', NIA_CLI_PACKAGE, 'auth', 'login', '--api-key', apiKey],
+    {
+      stdio: 'inherit',
+      shell: false,
+    },
+  );
 
   return fallbackResult.status === 0;
 }
