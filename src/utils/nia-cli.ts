@@ -12,8 +12,12 @@ function npxCommand(): string {
   return process.platform === 'win32' ? 'npx.cmd' : 'npx';
 }
 
+function niaCommand(): string {
+  return process.platform === 'win32' ? 'nia.cmd' : 'nia';
+}
+
 export function isNiaCliInstalled(): boolean {
-  const result = spawnSync('nia', ['--version'], {
+  const result = spawnSync(niaCommand(), ['--version'], {
     stdio: 'pipe',
     encoding: 'utf-8',
     shell: false,
@@ -34,12 +38,17 @@ export function ensureNiaCliInstalled(): boolean {
   installSpinner.start('Installing nia-cli...');
 
   const installResult = spawnSync(npmCommand(), ['install', '-g', NIA_CLI_PACKAGE], {
-    stdio: 'inherit',
+    stdio: 'pipe',
+    encoding: 'utf-8',
     shell: false,
   });
 
   if (installResult.status !== 0) {
     installSpinner.stop('Failed to install nia-cli');
+    const installOutput = [installResult.stdout, installResult.stderr].filter(Boolean).join('\n').trim();
+    if (installOutput) {
+      clack.log.error(installOutput);
+    }
     clack.log.error('Could not install nia-cli automatically.');
     clack.log.info('Install manually: npm install -g nia-cli');
     return false;
@@ -57,7 +66,7 @@ export function ensureNiaCliInstalled(): boolean {
 }
 
 export function runNiaSkill(): boolean {
-  const runResult = spawnSync('nia', ['skill'], {
+  const runResult = spawnSync(niaCommand(), ['skill'], {
     stdio: 'inherit',
     shell: false,
   });
@@ -78,7 +87,7 @@ export function runNiaSkill(): boolean {
 }
 
 export function runNiaAuthLogin(apiKey: string): boolean {
-  const authResult = spawnSync('nia', ['auth', 'login', '--api-key', apiKey], {
+  const authResult = spawnSync(niaCommand(), ['auth', 'login', '--api-key', apiKey], {
     stdio: 'inherit',
     shell: false,
   });
