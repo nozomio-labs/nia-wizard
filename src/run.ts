@@ -198,9 +198,9 @@ export async function runWizard(options: WizardOptions): Promise<void> {
           hint: 'Install via skills CLI',
         },
         {
-          value: 'nia-skill' as const,
-          label: 'Install via Nia CLI',
-          hint: 'Installs nia-cli if needed, then runs nia skill',
+          value: 'nia-cli' as const,
+          label: 'Install Nia CLI',
+          hint: 'Installs nia CLI + skill',
         },
         {
           value: 'mcp' as const,
@@ -310,14 +310,14 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
-  if (actions.includes('nia-skill')) {
+  if (actions.includes('nia-cli')) {
     console.log('');
     const success = await runNiaCliSkillInstall();
     if (success) {
-      clack.log.success('Nia skill installed via Nia CLI!');
+      clack.log.success('Nia CLI installed');
       installedNiaCliSkill = true;
     } else {
-      clack.log.warn('Nia CLI skill installation may have failed');
+      clack.log.warn('Nia CLI installation may have failed');
     }
   }
 
