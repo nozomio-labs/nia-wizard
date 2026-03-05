@@ -144,7 +144,9 @@ async function runDeviceFlow(): Promise<string> {
   console.log('');
   clack.log.step(chalk.yellow('Complete these steps in your browser:'));
   console.log('  1. Sign in or create an account');
-  console.log('  2. The CLI will be authorized automatically');
+  console.log('  2. Complete any setup steps shown');
+  console.log('');
+  clack.log.message(chalk.dim('The CLI will detect when you\'re done and continue automatically.'));
   console.log('');
 
   // Step 4: Wait for user and exchange
@@ -152,84 +154,93 @@ async function runDeviceFlow(): Promise<string> {
 }
 
 /**
- * Wait for user to complete browser auth, then exchange for API key
+ * Sleep helper
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Auto-poll for authorization and exchange for API key.
+ * Polls every 2s (with backoff on consecutive network errors), up to session expiry.
  */
 async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<string> {
-  // Loop until successful exchange or user cancels
+  const spinner = clack.spinner();
+  spinner.start('Waiting for browser authorization...');
+
+  const POLL_INTERVAL_MS = 2000;
+  const MAX_NETWORK_ERRORS = 5;
+  let consecutiveNetworkErrors = 0;
+
   while (true) {
-    // Check session validity
     if (!isSessionValid(session)) {
+      spinner.stop('Session expired');
       clack.log.error('Session has expired. Please start over.');
       return abort('Session expired', 1);
     }
 
-    // Prompt user to continue
-    const shouldContinue = await abortIfCancelled(
-      clack.confirm({
-        message: 'Press Enter once you\'ve signed in (or N to enter key manually)',
-        initialValue: true,
-      }),
-    );
-
-    if (!shouldContinue) {
-      // User chose manual entry
-      return await promptForManualApiKey();
-    }
-
-    // Try to exchange
-    const spinner = clack.spinner();
-    spinner.start('Checking authorization...');
-
     try {
       const apiKey = await exchangeForApiKey(session);
       spinner.stop(chalk.green('✓ Authorized!'));
-      
       clack.log.success('API key obtained successfully!');
       return apiKey;
     } catch (error) {
-      spinner.stop('Not ready yet');
-      
       if (isDeviceFlowError(error)) {
         switch (error.type) {
           case 'not_ready':
-            clack.log.warn('Browser authorization not complete yet.');
-            console.log('');
-            clack.log.message(
-              chalk.dim('Make sure you have:\n') +
-              '  • Signed in to your Nia account\n' +
-              '  • Completed any setup steps in the browser'
-            );
-            console.log('');
-            // Continue loop - let user try again
+            consecutiveNetworkErrors = 0;
             break;
-            
+
           case 'expired':
+            spinner.stop('Session expired');
             clack.log.error('Session has expired.');
             clack.log.info('Please run the wizard again to start a new session.');
             return abort('Session expired', 1);
-            
+
           case 'consumed':
+            spinner.stop('Session already used');
             clack.log.error('This session was already used.');
             clack.log.info('Please run the wizard again to start a new session.');
             return abort('Session already used', 1);
-            
+
           case 'invalid':
+            spinner.stop('Invalid session');
             clack.log.error(error.message);
             clack.log.info('Please run the wizard again to start a new session.');
             return abort('Invalid session', 1);
-            
+
+          case 'network':
+            consecutiveNetworkErrors++;
+            if (consecutiveNetworkErrors >= MAX_NETWORK_ERRORS) {
+              spinner.stop('Connection failed');
+              clack.log.error(`Failed to reach Nia servers after ${MAX_NETWORK_ERRORS} attempts.`);
+              clack.log.info('Falling back to manual API key entry.');
+              return await promptForManualApiKey();
+            }
+            break;
+
           default:
+            spinner.stop('Error');
             clack.log.error(error.message);
             clack.log.info('Falling back to manual API key entry.');
             return await promptForManualApiKey();
         }
       } else {
-        clack.log.error('An unexpected error occurred.');
-        debug(`Exchange error: ${error}`);
-        clack.log.info('Falling back to manual API key entry.');
-        return await promptForManualApiKey();
+        consecutiveNetworkErrors++;
+        if (consecutiveNetworkErrors >= MAX_NETWORK_ERRORS) {
+          spinner.stop('Connection failed');
+          clack.log.error('Lost connection to Nia servers.');
+          debug(`Exchange error: ${error}`);
+          clack.log.info('Falling back to manual API key entry.');
+          return await promptForManualApiKey();
+        }
       }
     }
+
+    const backoff = consecutiveNetworkErrors > 0
+      ? POLL_INTERVAL_MS * Math.min(consecutiveNetworkErrors, 4)
+      : POLL_INTERVAL_MS;
+    await sleep(backoff);
   }
 }
 

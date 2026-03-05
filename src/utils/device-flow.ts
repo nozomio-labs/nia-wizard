@@ -21,6 +21,9 @@ const APP_URL = process.env.NIA_APP_URL || '';
 // Session expiry (matches backend: 15 minutes)
 const SESSION_TTL_MS = 15 * 60 * 1000;
 
+// Network timeout for API calls (10 seconds)
+const FETCH_TIMEOUT_MS = 10_000;
+
 export interface DeviceSession {
   authorization_session_id: string;
   user_code: string;
@@ -45,6 +48,7 @@ export async function startDeviceSession(): Promise<DeviceSession> {
     headers: {
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -113,6 +117,7 @@ export async function exchangeForApiKey(
       authorization_session_id: session.authorization_session_id,
       user_code: session.user_code,
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
