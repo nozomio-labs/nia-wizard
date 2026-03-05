@@ -295,5 +295,5 @@ export async function askInstallMode(
     }),
   );
 
-  return mode;
+  return mode as 'local' | 'remote';
 }
