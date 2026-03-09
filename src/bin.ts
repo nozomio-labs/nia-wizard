@@ -25,7 +25,7 @@ const cli = yargs(hideBin(process.argv))
   .usage('$0 agent-guide')
   .command(
     '$0 [api-key]',
-    'Install Nia MCP server to your coding agents',
+    'Install Nia to your coding agents',
     (yargs) =>
       yargs
         .positional('api-key', {
@@ -155,12 +155,12 @@ const cli = yargs(hideBin(process.argv))
   )
   .command(
     'mcp <command>',
-    'Manage MCP server installation',
+    'Manage direct agent setup',
     (yargs) =>
       yargs
         .command(
           'add',
-          'Add Nia MCP server to coding agents',
+          'Add Nia to coding agents',
           (yargs) =>
             yargs
               .option('api-key', {
@@ -202,7 +202,7 @@ const cli = yargs(hideBin(process.argv))
         )
         .command(
           'remove',
-          'Remove Nia MCP server from coding agents',
+          'Remove Nia from coding agents',
           (yargs) =>
             yargs.option('debug', {
               type: 'boolean',

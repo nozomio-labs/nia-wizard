@@ -23,7 +23,7 @@ export async function runMCPAdd(options: MCPAddOptions): Promise<void> {
     enableDebug();
   }
 
-  clack.intro(chalk.bgCyan.black(' Nia MCP Server '));
+  clack.intro(chalk.bgCyan.black(' Nia Agent Setup '));
 
   // Get API key
   const apiKey = await getApiKey(options.apiKey);
@@ -91,7 +91,7 @@ export async function runMCPRemove(options: { debug?: boolean } = {}): Promise<v
     enableDebug();
   }
 
-  clack.intro(chalk.bgRed.white(' Remove Nia MCP Server '));
+  clack.intro(chalk.bgRed.white(' Remove Nia '));
 
   const removedClients = await removeMCPServerFromClientsStep();
 

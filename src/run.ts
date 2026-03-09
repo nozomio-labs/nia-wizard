@@ -188,20 +188,15 @@ export async function runWizard(options: WizardOptions): Promise<void> {
 
   printWelcome();
 
-  // First, ask what user wants to do (multi-select)
-  const actions = await abortIfCancelled(
-    clack.multiselect({
-      message: 'What would you like to do? (space to select, enter to confirm)',
+  // First, ask what user wants to do.
+  const action = await abortIfCancelled(
+    clack.select({
+      message: 'Choose how to install Nia:',
       options: [
         {
           value: 'nia-cli' as const,
-          label: 'Install Nia CLI',
-          hint: 'Installs nia CLI + skill',
-        },
-        {
-          value: 'add-mcp' as const,
-          label: 'Install via add-mcp',
-          hint: 'Quick install to all agents (new standard)',
+          label: 'Install Nia CLI (recommended)',
+          hint: 'Preferred path: installs nia CLI + skill',
         },
         {
           value: 'skills' as const,
@@ -209,27 +204,31 @@ export async function runWizard(options: WizardOptions): Promise<void> {
           hint: 'Install via skills CLI',
         },
         {
+          value: 'add-mcp' as const,
+          label: 'Install via add-mcp',
+          hint: 'Quick install to supported agents',
+        },
+        {
           value: 'mcp' as const,
-          label: 'Install Nia MCP Server',
-          hint: 'Works, but migrating to add-mcp since it\'s a new standard',
+          label: 'Install via MCP',
+          hint: 'Will be deprecated soon; skills are better',
         },
         {
           value: 'manual' as const,
           label: 'Manual Setup (View Config)',
-          hint: 'View configuration for manual setup',
+          hint: 'View config for a specific agent',
         },
       ],
-      required: true,
+      initialValue: 'nia-cli' as const,
     }),
   );
 
-  // Handle manual-only case
-  if (actions.includes('manual') && actions.length === 1) {
+  if (action === 'manual') {
     await runManualMode();
     return;
   }
 
-  // Get API key (needed for both MCP and Skills)
+  // Get API key for install flows.
   const apiKey = await getApiKey(options.apiKey);
 
   // Store API key for skills to use
@@ -241,8 +240,8 @@ export async function runWizard(options: WizardOptions): Promise<void> {
   let installedSkills = false;
   let installedNiaCliSkill = false;
 
-  // Run add-mcp installation if selected
-  if (actions.includes('add-mcp')) {
+  // Run add-mcp installation if selected.
+  if (action === 'add-mcp') {
     console.log('');
     const success = await runAddMcpInstall(apiKey);
     if (success) {
@@ -253,8 +252,8 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
-  // Run MCP installation if selected
-  if (actions.includes('mcp')) {
+  // Run direct agent setup if selected.
+  if (action === 'mcp') {
     // Select install mode
     let mode: 'local' | 'remote';
     if (options.local !== undefined) {
@@ -304,8 +303,8 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     installedMcp = installedClients.length > 0;
   }
 
-  // Run Skills installation if selected
-  if (actions.includes('skills')) {
+  // Run Skills installation if selected.
+  if (action === 'skills') {
     console.log('');
     const success = await runSkillsInstall();
     if (success) {
@@ -316,7 +315,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
-  if (actions.includes('nia-cli')) {
+  if (action === 'nia-cli') {
     console.log('');
     const success = await runNiaCliSkillInstall(apiKey);
     if (success) {
@@ -346,7 +345,7 @@ ${chalk.cyan('Get started:')}
 ${chalk.cyan('Try in your coding agent:')}
   ${chalk.yellow('"List my indexed sources"')}
   ${chalk.yellow('"Search vercel/ai-sdk for streaming"')}
-  ${chalk.yellow('"Run deep research on MCP protocols"')}
+  ${chalk.yellow('"Run deep research on agent tool protocols"')}
 
 ${chalk.dim('Using as API?')} ${chalk.cyan('https://docs.trynia.ai/api-guide')}
 ${chalk.dim('Follow us:')} ${chalk.cyan('https://x.com/nozomioai')}

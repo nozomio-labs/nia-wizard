@@ -35,9 +35,9 @@ export async function abort(message?: string, code = 1): Promise<never> {
 
 export function printWelcome(): void {
   console.log('');
-  clack.intro(chalk.bgCyan.black(' Nia MCP Wizard '));
+  clack.intro(chalk.bgCyan.black(' Nia Wizard '));
   clack.note(
-    'This wizard will install the Nia MCP server to your coding agents.\nGet external docs, code search, and research tools in your IDE.',
+    'This wizard installs Nia for your coding agents.\nGet external docs, code search, and research tools inside your agent.',
   );
 }
 

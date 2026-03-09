@@ -1,6 +1,6 @@
 # @nia/wizard
 
-CLI wizard to install Nia to your coding agents via MCP server or Skills.
+CLI wizard to install Nia to your coding agents via Nia CLI, Skills, or direct agent setup.
 
 ## Installation
 
@@ -66,8 +66,9 @@ npx nia-wizard
 
 The wizard stores your API key at `~/.config/nia/api_key`.
 
+- Select `Install Nia CLI (recommended)` to auto-install `nia-cli`, run `nia auth login --api-key ...`, and then run `nia skill`.
 - Select `Install Nia Skill` to use the existing `skills` CLI flow.
-- Select `Install Nia CLI` to auto-install `nia-cli`, run `nia auth login --api-key ...`, and then run `nia skill`.
+- Select `Install via add-mcp` for a quick install to supported agents.
 
 For deterministic agent/CI usage:
 
