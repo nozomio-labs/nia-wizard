@@ -9,6 +9,7 @@ import type { WizardOptions } from './utils/types.js';
 import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
 import { storeApiKey } from './utils/api-key.js';
 import { ensureNiaCliInstalled, runNiaAuthLogin, runNiaSkill } from './utils/nia-cli.js';
+import { track, shutdown } from './utils/analytics.js';
 
 /**
  * Run add-mcp installation via npx
@@ -186,6 +187,9 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     enableDebug();
   }
 
+  const startTime = Date.now();
+  track('cli_wizard_started', { entry_command: 'wizard' });
+
   printWelcome();
 
   // First, ask what user wants to do.
@@ -223,8 +227,12 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }),
   );
 
+  track('cli_install_method_selected', { install_method: action });
+
   if (action === 'manual') {
     await runManualMode();
+    track('cli_wizard_completed', { outcome: 'manual', total_duration_ms: Date.now() - startTime });
+    await shutdown();
     return;
   }
 
@@ -327,6 +335,12 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
+  track('cli_install_completed', {
+    install_method: action,
+    success: installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill,
+    mode: action === 'mcp' ? (options.local ? 'local' : 'remote') : undefined,
+  });
+
   // Outro
   if (installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill) {
     const niaSkillManagementHint = installedNiaCliSkill
@@ -351,7 +365,10 @@ ${chalk.dim('Using as API?')} ${chalk.cyan('https://docs.trynia.ai/api-guide')}
 ${chalk.dim('Follow us:')} ${chalk.cyan('https://x.com/nozomioai')}
 `;
     clack.outro(outroMessage);
+    track('cli_wizard_completed', { outcome: 'success', install_method: action, total_duration_ms: Date.now() - startTime });
   } else {
     clack.outro(chalk.dim('No changes made.'));
+    track('cli_wizard_completed', { outcome: 'no_changes', install_method: action, total_duration_ms: Date.now() - startTime });
   }
+  await shutdown();
 }

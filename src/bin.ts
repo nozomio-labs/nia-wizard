@@ -6,6 +6,7 @@ import { runWizard } from './run.js';
 import { runMCPAdd, runMCPRemove } from './mcp.js';
 import { runSkillAdd } from './skill.js';
 import { printAgentGuide } from './agent-guide.js';
+import { track, shutdown } from './utils/analytics.js';
 
 function printCliError(error: unknown): void {
   if (error instanceof Error) {
@@ -59,6 +60,8 @@ const cli = yargs(hideBin(process.argv))
           ci: argv.ci,
         });
       } catch (error) {
+        track('cli_wizard_error', { error_type: 'wizard', error_message: error instanceof Error ? error.message : String(error) });
+        await shutdown();
         printCliError(error);
         process.exit(1);
       }

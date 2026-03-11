@@ -11,6 +11,7 @@ import {
   type DeviceSession,
 } from './device-flow.js';
 import { debug } from './debug.js';
+import { track } from './analytics.js';
 
 // Use env var for local dev, prod as default
 const NIA_APP_URL = process.env.NIA_APP_URL || 'https://app.trynia.ai';
@@ -45,9 +46,12 @@ export function printWelcome(): void {
  * Get API key from user - either passed as arg, via device flow, or manual entry
  */
 export async function getApiKey(providedKey?: string): Promise<string> {
+  const authStartTime = Date.now();
+
   // If key provided and valid, use it
   if (providedKey && providedKey.startsWith('nk_')) {
     clack.log.success('Using provided API key');
+    track('cli_auth_completed', { auth_method: 'provided', duration_ms: 0 });
     return providedKey;
   }
 
@@ -78,11 +82,17 @@ export async function getApiKey(providedKey?: string): Promise<string> {
     }),
   );
 
+  track('cli_auth_method_selected', { auth_method: authMethod });
+
+  let apiKey: string;
   if (authMethod === 'browser') {
-    return await runDeviceFlow();
+    apiKey = await runDeviceFlow();
   } else {
-    return await promptForManualApiKey();
+    apiKey = await promptForManualApiKey();
   }
+
+  track('cli_auth_completed', { auth_method: authMethod, duration_ms: Date.now() - authStartTime });
+  return apiKey;
 }
 
 /**
@@ -98,6 +108,7 @@ async function runDeviceFlow(): Promise<string> {
   try {
     session = await startDeviceSession();
     spinner.stop('Connected!');
+    track('cli_device_flow_started', { authorization_session_id: session.authorization_session_id });
   } catch (error) {
     spinner.stop('Failed to connect');
     

@@ -12,6 +12,7 @@
  */
 
 import { debug } from './debug.js';
+import { getSessionId } from './analytics.js';
 
 // Backend API URL
 const BACKEND_URL = process.env.NIA_BACKEND_URL || 'https://apigcp.trynia.ai';
@@ -72,14 +73,15 @@ export async function startDeviceSession(): Promise<DeviceSession> {
   
   // Construct the verification URL to use /cli-onboarding for full experience
   // (org creation, GitHub connect, etc.) instead of /cli-auth which skips it
+  const sid = getSessionId();
   let verificationUrl: string;
   if (APP_URL) {
     // Local dev - use local app URL
-    verificationUrl = `${APP_URL}/cli-onboarding?code=${data.user_code}`;
+    verificationUrl = `${APP_URL}/cli-onboarding?code=${data.user_code}&sid=${sid}`;
     debug(`Using local APP_URL for verification: ${verificationUrl}`);
   } else {
     // Production - override backend's /cli-auth with /cli-onboarding
-    verificationUrl = data.verification_url.replace('/cli-auth?', '/cli-onboarding?');
+    verificationUrl = data.verification_url.replace('/cli-auth?', '/cli-onboarding?') + `&sid=${sid}`;
     debug(`Using cli-onboarding URL: ${verificationUrl}`);
   }
   
