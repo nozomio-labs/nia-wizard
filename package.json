@@ -1,6 +1,6 @@
 {
   "name": "nia-wizard",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "CLI wizard to install Nia to your coding agents",
   "type": "module",
   "main": "dist/index.js",
