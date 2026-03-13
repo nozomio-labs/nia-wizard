@@ -61,9 +61,9 @@ async function runNiaCliSkillInstall(apiKey: string): Promise<boolean> {
     return false;
   }
 
-  clack.log.info('Configuring nia-cli authentication...');
+  clack.log.info('Configuring @nozomioai/nia authentication...');
   if (!runNiaAuthLogin(apiKey)) {
-    clack.log.warn('nia-cli authentication failed');
+    clack.log.warn('@nozomioai/nia authentication failed');
     return false;
   }
 

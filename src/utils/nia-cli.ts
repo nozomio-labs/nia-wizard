@@ -2,7 +2,7 @@ import { spawnSync } from 'child_process';
 import clack from './clack.js';
 import { debug } from './debug.js';
 
-const NIA_CLI_PACKAGE = 'nia-cli';
+const NIA_CLI_PACKAGE = '@nozomioai/nia';
 
 function npmCommand(): string {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -32,10 +32,10 @@ export function ensureNiaCliInstalled(): boolean {
     return true;
   }
 
-  clack.log.info('Installing nia-cli globally with npm...');
+  clack.log.info('Installing @nozomioai/nia globally with npm...');
 
   const installSpinner = clack.spinner();
-  installSpinner.start('Installing nia-cli...');
+  installSpinner.start('Installing @nozomioai/nia...');
 
   const installResult = spawnSync(npmCommand(), ['install', '-g', NIA_CLI_PACKAGE], {
     stdio: 'pipe',
@@ -44,24 +44,24 @@ export function ensureNiaCliInstalled(): boolean {
   });
 
   if (installResult.status !== 0) {
-    installSpinner.stop('Failed to install nia-cli');
+    installSpinner.stop('Failed to install @nozomioai/nia');
     const installOutput = [installResult.stdout, installResult.stderr].filter(Boolean).join('\n').trim();
     if (installOutput) {
       clack.log.error(installOutput);
     }
-    clack.log.error('Could not install nia-cli automatically.');
-    clack.log.info('Install manually: npm install -g nia-cli');
+    clack.log.error('Could not install @nozomioai/nia automatically.');
+    clack.log.info('Install manually: npm install -g @nozomioai/nia');
     return false;
   }
 
   if (!isNiaCliInstalled()) {
-    installSpinner.stop('Installed nia-cli, but `nia` is not available');
+    installSpinner.stop('Installed @nozomioai/nia, but `nia` is not available');
     clack.log.error('The `nia` command is still unavailable in your PATH.');
-    clack.log.info('Open a new terminal or run: npm install -g nia-cli');
+    clack.log.info('Open a new terminal or run: npm install -g @nozomioai/nia');
     return false;
   }
 
-  installSpinner.stop('nia-cli installed!');
+  installSpinner.stop('@nozomioai/nia installed!');
   return true;
 }
 
@@ -75,8 +75,8 @@ export function runNiaSkill(): boolean {
     return true;
   }
 
-  debug('nia skill failed, falling back to npx nia-cli skill', runResult.status);
-  clack.log.warn('`nia skill` failed. Trying `npx -y nia-cli skill`...');
+  debug('nia skill failed, falling back to npx @nozomioai/nia skill', runResult.status);
+  clack.log.warn('`nia skill` failed. Trying `npx -y @nozomioai/nia skill`...');
 
   const fallbackResult = spawnSync(npxCommand(), ['-y', NIA_CLI_PACKAGE, 'skill'], {
     stdio: 'inherit',
@@ -96,8 +96,8 @@ export function runNiaAuthLogin(apiKey: string): boolean {
     return true;
   }
 
-  debug('nia auth login failed, falling back to npx nia-cli auth login', authResult.status);
-  clack.log.warn('`nia auth login` failed. Trying `npx -y nia-cli auth login`...');
+  debug('nia auth login failed, falling back to npx @nozomioai/nia auth login', authResult.status);
+  clack.log.warn('`nia auth login` failed. Trying `npx -y @nozomioai/nia auth login`...');
 
   const fallbackResult = spawnSync(
     npxCommand(),
