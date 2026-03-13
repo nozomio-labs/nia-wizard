@@ -42,11 +42,54 @@ export function printWelcome(): void {
   );
 }
 
+export async function askWizardStartMode(): Promise<'default' | 'advanced' | 'manual'> {
+  console.log('');
+  clack.note(
+    'Default setup:\n' +
+      '  • Browser sign-in\n' +
+      '  • Install nia-cli automatically\n' +
+      '  • Launch the recommended Nia CLI setup flow',
+    'Quick Setup',
+  );
+
+  return await abortIfCancelled(
+    clack.select({
+      message: 'Continue with:',
+      options: [
+        {
+          value: 'default' as const,
+          label: 'Default setup (recommended)',
+          hint: 'Browser sign-in + install nia-cli automatically',
+        },
+        {
+          value: 'advanced' as const,
+          label: 'Advanced setup',
+          hint: 'Choose install method and options',
+        },
+        {
+          value: 'manual' as const,
+          label: 'Manual setup',
+          hint: 'View config and set it up yourself',
+        },
+      ],
+      initialValue: 'default' as const,
+    }),
+  );
+}
+
+interface GetApiKeyOptions {
+  defaultMethod?: 'prompt' | 'browser' | 'manual';
+}
+
 /**
  * Get API key from user - either passed as arg, via device flow, or manual entry
  */
-export async function getApiKey(providedKey?: string): Promise<string> {
+export async function getApiKey(
+  providedKey?: string,
+  options: GetApiKeyOptions = {},
+): Promise<string> {
   const authStartTime = Date.now();
+  const defaultMethod = options.defaultMethod ?? 'prompt';
 
   // If key provided and valid, use it
   if (providedKey && providedKey.startsWith('nk_')) {
@@ -63,24 +106,27 @@ export async function getApiKey(providedKey?: string): Promise<string> {
   // No key - offer device flow or manual entry
   clack.log.info('You need a Nia API key to continue.');
 
-  const authMethod = await abortIfCancelled(
-    clack.select({
-      message: 'How would you like to authenticate?',
-      options: [
-        {
-          value: 'browser' as const,
-          label: 'Sign in with browser',
-          hint: 'Recommended. Opens browser for quick sign-in.',
-        },
-        {
-          value: 'manual' as const,
-          label: 'Enter API key manually',
-          hint: 'If you already have an API key.',
-        },
-      ],
-      initialValue: 'browser' as const,
-    }),
-  );
+  const authMethod =
+    defaultMethod === 'prompt'
+      ? await abortIfCancelled(
+          clack.select({
+            message: 'How would you like to authenticate?',
+            options: [
+              {
+                value: 'browser' as const,
+                label: 'Sign in with browser',
+                hint: 'Recommended. Opens browser for quick sign-in.',
+              },
+              {
+                value: 'manual' as const,
+                label: 'Enter API key manually',
+                hint: 'If you already have an API key.',
+              },
+            ],
+            initialValue: 'browser' as const,
+          }),
+        )
+      : (defaultMethod as 'browser' | 'manual');
 
   track('cli_auth_method_selected', { auth_method: authMethod });
 

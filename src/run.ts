@@ -1,7 +1,13 @@
 import chalk from 'chalk';
 import { spawnSync } from 'child_process';
 import clack from './utils/clack.js';
-import { printWelcome, getApiKey, askInstallMode, abortIfCancelled } from './utils/clack-utils.js';
+import {
+  printWelcome,
+  getApiKey,
+  askInstallMode,
+  abortIfCancelled,
+  askWizardStartMode,
+} from './utils/clack-utils.js';
 import { addMCPServerToClientsStep, getAllClients } from './steps/add-mcp-server-to-clients/index.js';
 import { enableDebug } from './utils/debug.js';
 import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies.js';
@@ -192,40 +198,46 @@ export async function runWizard(options: WizardOptions): Promise<void> {
 
   printWelcome();
 
-  // First, ask what user wants to do.
-  const action = await abortIfCancelled(
-    clack.select({
-      message: 'Choose how to install Nia:',
-      options: [
-        {
-          value: 'nia-cli' as const,
-          label: 'Install Nia CLI (recommended)',
-          hint: 'Preferred path: installs nia CLI + skill',
-        },
-        {
-          value: 'skills' as const,
-          label: 'Install Nia Skill',
-          hint: 'Install via skills CLI',
-        },
-        {
-          value: 'add-mcp' as const,
-          label: 'Install via add-mcp',
-          hint: 'Quick install to supported agents',
-        },
-        {
-          value: 'mcp' as const,
-          label: 'Install via MCP',
-          hint: 'Will be deprecated soon; skills are better',
-        },
-        {
-          value: 'manual' as const,
-          label: 'Manual Setup (View Config)',
-          hint: 'View config for a specific agent',
-        },
-      ],
-      initialValue: 'nia-cli' as const,
-    }),
-  );
+  const entryMode = options.ci ? 'default' : await askWizardStartMode();
+
+  const action =
+    entryMode === 'advanced'
+      ? await abortIfCancelled(
+          clack.select({
+            message: 'Choose how to install Nia:',
+            options: [
+              {
+                value: 'nia-cli' as const,
+                label: 'Install Nia CLI',
+                hint: 'Installs nia CLI + launches Nia skill setup',
+              },
+              {
+                value: 'skills' as const,
+                label: 'Install Nia Skill',
+                hint: 'Install via skills CLI',
+              },
+              {
+                value: 'add-mcp' as const,
+                label: 'Install via add-mcp',
+                hint: 'Quick install to supported agents',
+              },
+              {
+                value: 'mcp' as const,
+                label: 'Install via MCP',
+                hint: 'Will be deprecated soon; skills are better',
+              },
+              {
+                value: 'manual' as const,
+                label: 'Manual Setup (View Config)',
+                hint: 'View config for a specific agent',
+              },
+            ],
+            initialValue: 'nia-cli' as const,
+          }),
+        )
+      : entryMode === 'manual'
+        ? 'manual'
+        : 'nia-cli';
 
   track('cli_install_method_selected', { install_method: action });
 
@@ -237,7 +249,9 @@ export async function runWizard(options: WizardOptions): Promise<void> {
   }
 
   // Get API key for install flows.
-  const apiKey = await getApiKey(options.apiKey);
+  const apiKey = await getApiKey(options.apiKey, {
+    defaultMethod: entryMode === 'default' ? 'browser' : 'prompt',
+  });
 
   // Store API key for skills to use
   storeApiKey(apiKey);

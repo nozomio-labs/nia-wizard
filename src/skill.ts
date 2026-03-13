@@ -32,6 +32,7 @@ export interface SkillAddOptions {
   ci?: boolean;
   nonInteractive?: boolean;
   json?: boolean;
+  embedded?: boolean;
 }
 
 interface SkillInstallResult {
@@ -56,7 +57,7 @@ export async function runSkillAdd(options: SkillAddOptions): Promise<void> {
   const source = options.source || DEFAULT_SKILL_SOURCE;
   const allAgents = Boolean(options.allAgents);
 
-  if (!options.json) {
+  if (!options.json && !options.embedded) {
     clack.intro(chalk.bgCyan.black(' Nia Skill Installer '));
   }
 
@@ -126,7 +127,9 @@ export async function runSkillAdd(options: SkillAddOptions): Promise<void> {
 
   if (!options.json) {
     clack.log.success('Nia skill installed!');
-    clack.outro(chalk.green('Done!'));
+    if (!options.embedded) {
+      clack.outro(chalk.green('Done!'));
+    }
   }
 }
 

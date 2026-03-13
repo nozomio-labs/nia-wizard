@@ -24,6 +24,8 @@ This will:
 npx nia-wizard
 ```
 
+Press Enter to continue with the recommended default setup, which signs you in and installs `nia-cli`, or use the arrow keys to choose advanced or manual setup.
+
 ### With API Key
 
 ```bash
