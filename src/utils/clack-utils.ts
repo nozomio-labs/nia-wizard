@@ -44,13 +44,6 @@ export function printWelcome(): void {
 
 export async function askWizardStartMode(): Promise<'default' | 'advanced' | 'manual'> {
   console.log('');
-  clack.note(
-    'Default setup:\n' +
-      '  • Browser sign-in\n' +
-      '  • Install nia-cli automatically\n' +
-      '  • Launch the recommended Nia CLI setup flow',
-    'Quick Setup',
-  );
 
   return await abortIfCancelled(
     clack.select({
