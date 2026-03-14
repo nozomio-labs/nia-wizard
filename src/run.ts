@@ -1,21 +1,21 @@
 import chalk from 'chalk';
 import { spawnSync } from 'child_process';
-import clack from './utils/clack.js';
-import {
-  printWelcome,
-  getApiKey,
-  askInstallMode,
-  abortIfCancelled,
-  askWizardStartMode,
-} from './utils/clack-utils.js';
+import { REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
 import { addMCPServerToClientsStep, getAllClients } from './steps/add-mcp-server-to-clients/index.js';
-import { enableDebug } from './utils/debug.js';
-import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies.js';
-import type { WizardOptions } from './utils/types.js';
-import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
+import { shutdown, track } from './utils/analytics.js';
 import { storeApiKey } from './utils/api-key.js';
+import {
+    abortIfCancelled,
+    askInstallMode,
+    askWizardStartMode,
+    getApiKey,
+    printWelcome,
+} from './utils/clack-utils.js';
+import clack from './utils/clack.js';
+import { enableDebug } from './utils/debug.js';
+import { dependenciesReady, ensureLocalDependencies } from './utils/dependencies.js';
 import { ensureNiaCliInstalled, runNiaAuthLogin, runNiaSkill } from './utils/nia-cli.js';
-import { track, shutdown } from './utils/analytics.js';
+import type { WizardOptions } from './utils/types.js';
 
 /**
  * Run add-mcp installation via npx

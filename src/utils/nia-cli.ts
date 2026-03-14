@@ -66,7 +66,7 @@ export function ensureNiaCliInstalled(): boolean {
 }
 
 export function runNiaSkill(): boolean {
-  const runResult = spawnSync(niaCommand(), ['skill'], {
+  const runResult = spawnSync(niaCommand(), ['skill', '--all'], {
     stdio: 'inherit',
     shell: false,
   });
@@ -75,10 +75,10 @@ export function runNiaSkill(): boolean {
     return true;
   }
 
-  debug('nia skill failed, falling back to npx @nozomioai/nia skill', runResult.status);
-  clack.log.warn('`nia skill` failed. Trying `npx -y @nozomioai/nia skill`...');
+  debug('nia skill --all failed, falling back to npx @nozomioai/nia skill --all', runResult.status);
+  clack.log.warn('`nia skill --all` failed. Trying `npx -y @nozomioai/nia skill --all`...');
 
-  const fallbackResult = spawnSync(npxCommand(), ['-y', NIA_CLI_PACKAGE, 'skill'], {
+  const fallbackResult = spawnSync(npxCommand(), ['-y', NIA_CLI_PACKAGE, 'skill', '--all'], {
     stdio: 'inherit',
     shell: false,
   });
