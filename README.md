@@ -24,7 +24,7 @@ This will:
 npx nia-wizard
 ```
 
-Press Enter to continue with the recommended default setup, which signs you in and installs `nia-cli`, or use the arrow keys to choose advanced or manual setup.
+Press Enter to continue with the recommended default setup, which signs you in and installs or updates `nia-cli` to the latest version, or use the arrow keys to choose advanced or manual setup.
 
 ### With API Key
 
@@ -68,7 +68,7 @@ npx nia-wizard
 
 The wizard stores your API key at `~/.config/nia/api_key`.
 
-- Select `Install Nia CLI (recommended)` to auto-install `@nozomioai/nia`, run `nia auth login --api-key ...`, and then run `nia skill`.
+- Select `Install Nia CLI (recommended)` to auto-install or update `@nozomioai/nia` to the latest version, run `nia auth login --api-key ...`, and then run `nia skill`.
 - Select `Install Nia Skill` to use the existing `skills` CLI flow.
 - Select `Install via add-mcp` for a quick install to supported agents.
 
