@@ -1,4 +1,4 @@
-# @nia/wizard
+# nia-wizard
 
 CLI wizard to install Nia to your coding agents via Nia CLI, Skills, or direct agent setup.
 
@@ -41,20 +41,20 @@ npx nia-wizard nk_your_api_key
 If you already have an API key:
 
 ```bash
-npx @nia/wizard nk_your_api_key_here
+npx nia-wizard nk_your_api_key_here
 ```
 
 ### MCP Commands
 
 ```bash
 # Add Nia MCP server
-npx @nia/wizard mcp add
+npx nia-wizard mcp add
 
 # Add with API key and local mode
-npx @nia/wizard mcp add --api-key nk_xxx --local
+npx nia-wizard mcp add --api-key nk_xxx --local
 
 # Remove Nia MCP server
-npx @nia/wizard mcp remove
+npx nia-wizard mcp remove
 ```
 
 ### Skills Installation
@@ -144,7 +144,7 @@ This is the fastest way to get started - no manual copying required!
 If you prefer, you can:
 
 - Get your API key from [app.trynia.ai](https://app.trynia.ai)
-- Pass it directly: `npx @nia/wizard nk_xxx`
+- Pass it directly: `npx nia-wizard nk_xxx`
 - Or select "Enter API key manually" when prompted
 
 ## Supported Coding Agents
