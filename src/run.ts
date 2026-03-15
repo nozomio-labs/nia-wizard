@@ -31,7 +31,7 @@ async function runAddMcpInstall(apiKey: string): Promise<boolean> {
   const result = spawnSync(
     'npx',
     [
-      'add-mcp',
+      'add-mcp@latest',
       REMOTE_MCP_URL,
       '--header',
       `"Authorization: Bearer ${apiKey}"`,
