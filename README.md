@@ -1,6 +1,6 @@
-# @nia/wizard
+# nia-wizard
 
-CLI wizard to install Nia to your coding agents via MCP server or Skills.
+CLI wizard to install Nia to your coding agents via Nia CLI, Skills, or direct agent setup.
 
 ## Installation
 
@@ -11,6 +11,7 @@ curl -fsSL https://app.trynia.ai/cli | sh
 ```
 
 This will:
+
 1. Install Node.js if needed
 2. Run the wizard which:
    - Opens your browser for authentication
@@ -22,6 +23,8 @@ This will:
 ```bash
 npx nia-wizard
 ```
+
+Press Enter to continue with the recommended default setup, which signs you in and installs or updates `nia-cli` to the latest version, or use the arrow keys to choose advanced or manual setup.
 
 ### With API Key
 
@@ -38,20 +41,20 @@ npx nia-wizard nk_your_api_key
 If you already have an API key:
 
 ```bash
-npx @nia/wizard nk_your_api_key_here
+npx nia-wizard nk_your_api_key_here
 ```
 
 ### MCP Commands
 
 ```bash
 # Add Nia MCP server
-npx @nia/wizard mcp add
+npx nia-wizard mcp add
 
 # Add with API key and local mode
-npx @nia/wizard mcp add --api-key nk_xxx --local
+npx nia-wizard mcp add --api-key nk_xxx --local
 
 # Remove Nia MCP server
-npx @nia/wizard mcp remove
+npx nia-wizard mcp remove
 ```
 
 ### Skills Installation
@@ -63,17 +66,63 @@ npx nia-wizard
 # Then select "Install Nia Skill"
 ```
 
-This runs `npx skills add nozomio-labs/nia-skill` and stores your API key at `~/.config/nia/api_key`.
+The wizard stores your API key at `~/.config/nia/api_key`.
+
+- Select `Install Nia CLI (recommended)` to auto-install or update `@nozomioai/nia` to the latest version, run `nia auth login --api-key ...`, and then run `nia skill`.
+- Select `Install Nia Skill` to use the existing `skills` CLI flow.
+- Select `Install via add-mcp` for a quick install to supported agents.
+
+For deterministic agent/CI usage:
+
+```bash
+npx nia-wizard skill add \
+  --api-key nk_xxx \
+  --source nozomio-labs/nia-skill \
+  --non-interactive \
+  --ci
+```
+
+Install globally for all detected agents:
+
+```bash
+npx nia-wizard skill add \
+  --api-key nk_xxx \
+  --all-agents \
+  --non-interactive \
+  --ci
+```
+
+Optional target-specific installation:
+
+```bash
+npx nia-wizard skill add \
+  --api-key nk_xxx \
+  --target codex \
+  --non-interactive \
+  --ci
+```
+
+Print the headless onboarding guide for agents:
+
+```bash
+npx nia-wizard agent-guide
+```
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--local` | Use local mode (runs on your machine, requires pipx) |
-| `--remote` | Use remote mode (connects to Nia cloud) |
-| `--debug` | Enable debug logging |
-| `--ci` | CI mode (skip prompts, use defaults) |
-| `--api-key`, `-k` | Nia API key |
+| Option              | Description                                                    |
+| ------------------- | -------------------------------------------------------------- |
+| `--local`           | Use local mode (runs on your machine, requires pipx)           |
+| `--remote`          | Use remote mode (connects to Nia cloud)                        |
+| `--debug`           | Enable debug logging                                           |
+| `--ci`              | CI mode (skip prompts, use defaults)                           |
+| `--api-key`, `-k`   | Nia API key                                                    |
+| `--non-interactive` | Fail fast instead of waiting for prompts (skill command)       |
+| `--target`          | Target coding agent for skill installation (skill command)     |
+| `--all-agents`      | Install to all detected agents in global scope (skill command) |
+| `--global`          | Install to global user skills directories (skill command)      |
+| `--source`          | Skill source path/repo (skill command)                         |
+| `--json`            | Print machine-readable result (skill command)                  |
 
 ## Authentication
 
@@ -93,59 +142,60 @@ This is the fastest way to get started - no manual copying required!
 ### 2. Manual API Key Entry
 
 If you prefer, you can:
+
 - Get your API key from [app.trynia.ai](https://app.trynia.ai)
-- Pass it directly: `npx @nia/wizard nk_xxx`
+- Pass it directly: `npx nia-wizard nk_xxx`
 - Or select "Enter API key manually" when prompted
 
 ## Supported Coding Agents
 
 ### Full Support (Local + Remote)
 
-| Agent | Config Location |
-|-------|-----------------|
-| Cursor | `~/.cursor/mcp.json` |
-| VS Code | `~/.vscode/mcp.json` |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
-| Cline | `~/.cline/mcp_settings.json` |
-| Continue | `~/.continue/config.json` |
-| Antigravity | `~/.gemini/antigravity/mcp_config.json` |
-| Trae | `~/Library/Application Support/Trae/User/mcp.json` |
-| Roo Code | `~/.roo-code/mcp.json` |
-| Kilo Code | `~/.kilocode/mcp.json` |
-| Gemini CLI | `~/.gemini/settings.json` |
-| OpenCode | `~/.opencode/config.json` |
-| Qodo Gen | `~/.qodo/mcp.json` |
-| Qwen Coder | `~/.qwen/settings.json` |
-| Visual Studio | `~/.vs/mcp.json` |
-| Crush | `~/.crush/config.json` |
-| Copilot Agent | `.github/copilot-mcp.json` (per-repo) |
-| Copilot CLI | `~/.copilot/mcp-config.json` |
-| Factory | CLI: `droid mcp add` |
+| Agent         | Config Location                                    |
+| ------------- | -------------------------------------------------- |
+| Cursor        | `~/.cursor/mcp.json`                               |
+| VS Code       | `~/.vscode/mcp.json`                               |
+| Windsurf      | `~/.codeium/windsurf/mcp_config.json`              |
+| Cline         | `~/.cline/mcp_settings.json`                       |
+| Continue      | `~/.continue/config.json`                          |
+| Antigravity   | `~/.gemini/antigravity/mcp_config.json`            |
+| Trae          | `~/Library/Application Support/Trae/User/mcp.json` |
+| Roo Code      | `~/.roo-code/mcp.json`                             |
+| Kilo Code     | `~/.kilocode/mcp.json`                             |
+| Gemini CLI    | `~/.gemini/settings.json`                          |
+| OpenCode      | `~/.opencode/config.json`                          |
+| Qodo Gen      | `~/.qodo/mcp.json`                                 |
+| Qwen Coder    | `~/.qwen/settings.json`                            |
+| Visual Studio | `~/.vs/mcp.json`                                   |
+| Crush         | `~/.crush/config.json`                             |
+| Copilot Agent | `.github/copilot-mcp.json` (per-repo)              |
+| Copilot CLI   | `~/.copilot/mcp-config.json`                       |
+| Factory       | CLI: `droid mcp add`                               |
 
 ### Remote Only
 
-| Agent | Notes |
-|-------|-------|
-| Claude Code | CLI: `claude mcp add` |
-| Amp | CLI: `amp mcp add` |
-| Vibe | TOML config at `~/.vibe/config.toml` |
+| Agent       | Notes                                |
+| ----------- | ------------------------------------ |
+| Claude Code | CLI: `claude mcp add`                |
+| Amp         | CLI: `amp mcp add`                   |
+| Vibe        | TOML config at `~/.vibe/config.toml` |
 
 ### Local Only
 
-| Agent | Config Location |
-|-------|-----------------|
+| Agent          | Config Location                                                   |
+| -------------- | ----------------------------------------------------------------- |
 | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Codex CLI | CLI: `codex mcp add` |
-| Codex App | `~/.codex/config.toml` |
-| Zed | `~/.config/zed/settings.json` |
-| Augment | VS Code settings |
-| JetBrains | `~/.jetbrains/mcp.json` |
-| Kiro | `~/.kiro/mcp.json` |
-| LM Studio | `~/.lmstudio/mcp.json` |
-| Bolt AI | `~/Library/Application Support/BoltAI/mcp.json` |
-| Perplexity | `~/Library/Application Support/Perplexity/mcp.json` |
-| Warp | `~/.warp/mcp.json` |
-| Amazon Q | `~/.aws/amazonq/mcp.json` |
+| Codex CLI      | CLI: `codex mcp add`                                              |
+| Codex App      | `~/.codex/config.toml`                                            |
+| Zed            | `~/.config/zed/settings.json`                                     |
+| Augment        | VS Code settings                                                  |
+| JetBrains      | `~/.jetbrains/mcp.json`                                           |
+| Kiro           | `~/.kiro/mcp.json`                                                |
+| LM Studio      | `~/.lmstudio/mcp.json`                                            |
+| Bolt AI        | `~/Library/Application Support/BoltAI/mcp.json`                   |
+| Perplexity     | `~/Library/Application Support/Perplexity/mcp.json`               |
+| Warp           | `~/.warp/mcp.json`                                                |
+| Amazon Q       | `~/.aws/amazonq/mcp.json`                                         |
 
 ### Manual Setup Required
 

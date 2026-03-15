@@ -12,6 +12,7 @@
  */
 
 import { debug } from './debug.js';
+import { getSessionId } from './analytics.js';
 
 // Backend API URL
 const BACKEND_URL = process.env.NIA_BACKEND_URL || 'https://apigcp.trynia.ai';
@@ -20,6 +21,9 @@ const APP_URL = process.env.NIA_APP_URL || '';
 
 // Session expiry (matches backend: 15 minutes)
 const SESSION_TTL_MS = 15 * 60 * 1000;
+
+// Network timeout for API calls (10 seconds)
+const FETCH_TIMEOUT_MS = 10_000;
 
 export interface DeviceSession {
   authorization_session_id: string;
@@ -45,6 +49,7 @@ export async function startDeviceSession(): Promise<DeviceSession> {
     headers: {
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -68,14 +73,15 @@ export async function startDeviceSession(): Promise<DeviceSession> {
   
   // Construct the verification URL to use /cli-onboarding for full experience
   // (org creation, GitHub connect, etc.) instead of /cli-auth which skips it
+  const sid = getSessionId();
   let verificationUrl: string;
   if (APP_URL) {
     // Local dev - use local app URL
-    verificationUrl = `${APP_URL}/cli-onboarding?code=${data.user_code}`;
+    verificationUrl = `${APP_URL}/cli-onboarding?code=${data.user_code}&sid=${sid}`;
     debug(`Using local APP_URL for verification: ${verificationUrl}`);
   } else {
     // Production - override backend's /cli-auth with /cli-onboarding
-    verificationUrl = data.verification_url.replace('/cli-auth?', '/cli-onboarding?');
+    verificationUrl = data.verification_url.replace('/cli-auth?', '/cli-onboarding?') + `&sid=${sid}`;
     debug(`Using cli-onboarding URL: ${verificationUrl}`);
   }
   
@@ -113,6 +119,7 @@ export async function exchangeForApiKey(
       authorization_session_id: session.authorization_session_id,
       user_code: session.user_code,
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {

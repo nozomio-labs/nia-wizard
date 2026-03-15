@@ -11,6 +11,7 @@ import {
   type DeviceSession,
 } from './device-flow.js';
 import { debug } from './debug.js';
+import { track } from './analytics.js';
 
 // Use env var for local dev, prod as default
 const NIA_APP_URL = process.env.NIA_APP_URL || 'https://app.trynia.ai';
@@ -35,19 +36,58 @@ export async function abort(message?: string, code = 1): Promise<never> {
 
 export function printWelcome(): void {
   console.log('');
-  clack.intro(chalk.bgCyan.black(' Nia MCP Wizard '));
+  clack.intro(chalk.bgCyan.black(' Nia Wizard '));
   clack.note(
-    'This wizard will install the Nia MCP server to your coding agents.\nGet external docs, code search, and research tools in your IDE.',
+    'This wizard installs Nia for your coding agents.\nGet external docs, code search, and research tools inside your agent.',
   );
+}
+
+export async function askWizardStartMode(): Promise<'default' | 'advanced' | 'manual'> {
+  console.log('');
+
+  return await abortIfCancelled(
+    clack.select({
+      message: 'Continue with:',
+      options: [
+        {
+          value: 'default' as const,
+          label: 'Default setup (recommended)',
+          hint: 'Browser sign-in + install nia-cli automatically',
+        },
+        {
+          value: 'advanced' as const,
+          label: 'Advanced setup',
+          hint: 'Choose install method and options',
+        },
+        {
+          value: 'manual' as const,
+          label: 'Manual setup',
+          hint: 'View config and set it up yourself',
+        },
+      ],
+      initialValue: 'default' as const,
+    }),
+  );
+}
+
+interface GetApiKeyOptions {
+  defaultMethod?: 'prompt' | 'browser' | 'manual';
 }
 
 /**
  * Get API key from user - either passed as arg, via device flow, or manual entry
  */
-export async function getApiKey(providedKey?: string): Promise<string> {
+export async function getApiKey(
+  providedKey?: string,
+  options: GetApiKeyOptions = {},
+): Promise<string> {
+  const authStartTime = Date.now();
+  const defaultMethod = options.defaultMethod ?? 'prompt';
+
   // If key provided and valid, use it
   if (providedKey && providedKey.startsWith('nk_')) {
     clack.log.success('Using provided API key');
+    track('cli_auth_completed', { auth_method: 'provided', duration_ms: 0 });
     return providedKey;
   }
 
@@ -59,30 +99,39 @@ export async function getApiKey(providedKey?: string): Promise<string> {
   // No key - offer device flow or manual entry
   clack.log.info('You need a Nia API key to continue.');
 
-  const authMethod = await abortIfCancelled(
-    clack.select({
-      message: 'How would you like to authenticate?',
-      options: [
-        {
-          value: 'browser' as const,
-          label: 'Sign in with browser',
-          hint: 'Recommended. Opens browser for quick sign-in.',
-        },
-        {
-          value: 'manual' as const,
-          label: 'Enter API key manually',
-          hint: 'If you already have an API key.',
-        },
-      ],
-      initialValue: 'browser' as const,
-    }),
-  );
+  const authMethod =
+    defaultMethod === 'prompt'
+      ? await abortIfCancelled(
+          clack.select({
+            message: 'How would you like to authenticate?',
+            options: [
+              {
+                value: 'browser' as const,
+                label: 'Sign in with browser',
+                hint: 'Recommended. Opens browser for quick sign-in.',
+              },
+              {
+                value: 'manual' as const,
+                label: 'Enter API key manually',
+                hint: 'If you already have an API key.',
+              },
+            ],
+            initialValue: 'browser' as const,
+          }),
+        )
+      : (defaultMethod as 'browser' | 'manual');
 
+  track('cli_auth_method_selected', { auth_method: authMethod });
+
+  let apiKey: string;
   if (authMethod === 'browser') {
-    return await runDeviceFlow();
+    apiKey = await runDeviceFlow();
   } else {
-    return await promptForManualApiKey();
+    apiKey = await promptForManualApiKey();
   }
+
+  track('cli_auth_completed', { auth_method: authMethod, duration_ms: Date.now() - authStartTime });
+  return apiKey;
 }
 
 /**
@@ -98,6 +147,7 @@ async function runDeviceFlow(): Promise<string> {
   try {
     session = await startDeviceSession();
     spinner.stop('Connected!');
+    track('cli_device_flow_started', { authorization_session_id: session.authorization_session_id });
   } catch (error) {
     spinner.stop('Failed to connect');
     
@@ -144,7 +194,9 @@ async function runDeviceFlow(): Promise<string> {
   console.log('');
   clack.log.step(chalk.yellow('Complete these steps in your browser:'));
   console.log('  1. Sign in or create an account');
-  console.log('  2. The CLI will be authorized automatically');
+  console.log('  2. Complete any setup steps shown');
+  console.log('');
+  clack.log.message(chalk.dim('The CLI will detect when you\'re done and continue automatically.'));
   console.log('');
 
   // Step 4: Wait for user and exchange
@@ -152,84 +204,93 @@ async function runDeviceFlow(): Promise<string> {
 }
 
 /**
- * Wait for user to complete browser auth, then exchange for API key
+ * Sleep helper
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Auto-poll for authorization and exchange for API key.
+ * Polls every 2s (with backoff on consecutive network errors), up to session expiry.
  */
 async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<string> {
-  // Loop until successful exchange or user cancels
+  const spinner = clack.spinner();
+  spinner.start('Waiting for browser authorization...');
+
+  const POLL_INTERVAL_MS = 2000;
+  const MAX_NETWORK_ERRORS = 5;
+  let consecutiveNetworkErrors = 0;
+
   while (true) {
-    // Check session validity
     if (!isSessionValid(session)) {
+      spinner.stop('Session expired');
       clack.log.error('Session has expired. Please start over.');
       return abort('Session expired', 1);
     }
 
-    // Prompt user to continue
-    const shouldContinue = await abortIfCancelled(
-      clack.confirm({
-        message: 'Press Enter once you\'ve signed in (or N to enter key manually)',
-        initialValue: true,
-      }),
-    );
-
-    if (!shouldContinue) {
-      // User chose manual entry
-      return await promptForManualApiKey();
-    }
-
-    // Try to exchange
-    const spinner = clack.spinner();
-    spinner.start('Checking authorization...');
-
     try {
       const apiKey = await exchangeForApiKey(session);
       spinner.stop(chalk.green('✓ Authorized!'));
-      
       clack.log.success('API key obtained successfully!');
       return apiKey;
     } catch (error) {
-      spinner.stop('Not ready yet');
-      
       if (isDeviceFlowError(error)) {
         switch (error.type) {
           case 'not_ready':
-            clack.log.warn('Browser authorization not complete yet.');
-            console.log('');
-            clack.log.message(
-              chalk.dim('Make sure you have:\n') +
-              '  • Signed in to your Nia account\n' +
-              '  • Completed any setup steps in the browser'
-            );
-            console.log('');
-            // Continue loop - let user try again
+            consecutiveNetworkErrors = 0;
             break;
-            
+
           case 'expired':
+            spinner.stop('Session expired');
             clack.log.error('Session has expired.');
             clack.log.info('Please run the wizard again to start a new session.');
             return abort('Session expired', 1);
-            
+
           case 'consumed':
+            spinner.stop('Session already used');
             clack.log.error('This session was already used.');
             clack.log.info('Please run the wizard again to start a new session.');
             return abort('Session already used', 1);
-            
+
           case 'invalid':
+            spinner.stop('Invalid session');
             clack.log.error(error.message);
             clack.log.info('Please run the wizard again to start a new session.');
             return abort('Invalid session', 1);
-            
+
+          case 'network':
+            consecutiveNetworkErrors++;
+            if (consecutiveNetworkErrors >= MAX_NETWORK_ERRORS) {
+              spinner.stop('Connection failed');
+              clack.log.error(`Failed to reach Nia servers after ${MAX_NETWORK_ERRORS} attempts.`);
+              clack.log.info('Falling back to manual API key entry.');
+              return await promptForManualApiKey();
+            }
+            break;
+
           default:
+            spinner.stop('Error');
             clack.log.error(error.message);
             clack.log.info('Falling back to manual API key entry.');
             return await promptForManualApiKey();
         }
       } else {
-        clack.log.error('An unexpected error occurred.');
-        debug(`Exchange error: ${error}`);
-        clack.log.info('Falling back to manual API key entry.');
-        return await promptForManualApiKey();
+        consecutiveNetworkErrors++;
+        if (consecutiveNetworkErrors >= MAX_NETWORK_ERRORS) {
+          spinner.stop('Connection failed');
+          clack.log.error('Lost connection to Nia servers.');
+          debug(`Exchange error: ${error}`);
+          clack.log.info('Falling back to manual API key entry.');
+          return await promptForManualApiKey();
+        }
       }
     }
+
+    const backoff = consecutiveNetworkErrors > 0
+      ? POLL_INTERVAL_MS * Math.min(consecutiveNetworkErrors, 4)
+      : POLL_INTERVAL_MS;
+    await sleep(backoff);
   }
 }
 
@@ -295,5 +356,5 @@ export async function askInstallMode(
     }),
   );
 
-  return mode;
+  return mode as 'local' | 'remote';
 }

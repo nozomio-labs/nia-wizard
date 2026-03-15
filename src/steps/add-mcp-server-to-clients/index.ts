@@ -248,7 +248,7 @@ export async function addMCPServerToClientsStep(
 
   // Install to selected clients
   const spinner = clack.spinner();
-  spinner.start('Installing Nia MCP server...');
+  spinner.start('Installing Nia in selected agents...');
 
   const successfulClients: string[] = [];
   const failedClients: { name: string; error: string }[] = [];
@@ -323,7 +323,7 @@ export async function removeMCPServerFromClientsStep(): Promise<string[]> {
 
   // Remove from selected clients
   const spinner = clack.spinner();
-  spinner.start('Removing Nia MCP server...');
+  spinner.start('Removing Nia from selected agents...');
 
   const removedClients: string[] = [];
 

@@ -1,26 +1,21 @@
 import chalk from 'chalk';
 import { spawnSync } from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import clack from './utils/clack.js';
-import { printWelcome, getApiKey, askInstallMode, abortIfCancelled } from './utils/clack-utils.js';
+import { REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
 import { addMCPServerToClientsStep, getAllClients } from './steps/add-mcp-server-to-clients/index.js';
+import { shutdown, track } from './utils/analytics.js';
+import { storeApiKey } from './utils/api-key.js';
+import {
+    abortIfCancelled,
+    askInstallMode,
+    askWizardStartMode,
+    getApiKey,
+    printWelcome,
+} from './utils/clack-utils.js';
+import clack from './utils/clack.js';
 import { enableDebug } from './utils/debug.js';
-import { ensureLocalDependencies, dependenciesReady } from './utils/dependencies.js';
+import { dependenciesReady, ensureLocalDependencies } from './utils/dependencies.js';
+import { ensureNiaCliInstalled, runNiaAuthLogin, runNiaSkill } from './utils/nia-cli.js';
 import type { WizardOptions } from './utils/types.js';
-import { getDefaultServerConfig, getRemoteServerConfig, getLocalServerConfig, REMOTE_MCP_URL } from './steps/add-mcp-server-to-clients/defaults.js';
-
-/**
- * Store API key for Nia skill to use
- */
-function storeApiKey(apiKey: string): void {
-  const configDir = path.join(os.homedir(), '.config', 'nia');
-  const keyPath = path.join(configDir, 'api_key');
-
-  fs.mkdirSync(configDir, { recursive: true });
-  fs.writeFileSync(keyPath, apiKey, { mode: 0o600 });
-}
 
 /**
  * Run add-mcp installation via npx
@@ -60,6 +55,25 @@ async function runSkillsInstall(): Promise<boolean> {
   });
 
   return result.status === 0;
+}
+
+/**
+ * Run Nia CLI skill installation
+ */
+async function runNiaCliSkillInstall(apiKey: string): Promise<boolean> {
+  clack.log.info('Launching Nia CLI skill installer...\n');
+
+  if (!ensureNiaCliInstalled()) {
+    return false;
+  }
+
+  clack.log.info('Configuring @nozomioai/nia authentication...');
+  if (!runNiaAuthLogin(apiKey)) {
+    clack.log.warn('@nozomioai/nia authentication failed');
+    return false;
+  }
+
+  return runNiaSkill();
 }
 
 /**
@@ -179,46 +193,65 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     enableDebug();
   }
 
+  const startTime = Date.now();
+  track('cli_wizard_started', { entry_command: 'wizard' });
+
   printWelcome();
 
-  // First, ask what user wants to do (multi-select)
-  const actions = await abortIfCancelled(
-    clack.multiselect({
-      message: 'What would you like to do? (space to select, enter to confirm)',
-      options: [
-        {
-          value: 'add-mcp' as const,
-          label: 'Install via add-mcp',
-          hint: 'Quick install to all agents (new standard)',
-        },
-        {
-          value: 'skills' as const,
-          label: 'Install Nia Skill',
-          hint: 'Install via skills CLI',
-        },
-        {
-          value: 'mcp' as const,
-          label: 'Install Nia MCP Server',
-          hint: 'Works, but migrating to add-mcp since it\'s a new standard',
-        },
-        {
-          value: 'manual' as const,
-          label: 'Manual Setup (View Config)',
-          hint: 'View configuration for manual setup',
-        },
-      ],
-      required: true,
-    }),
-  );
+  const entryMode = options.ci ? 'default' : await askWizardStartMode();
 
-  // Handle manual-only case
-  if (actions.includes('manual') && actions.length === 1) {
+  const action =
+    entryMode === 'advanced'
+      ? await abortIfCancelled(
+          clack.select({
+            message: 'Choose how to install Nia:',
+            options: [
+              {
+                value: 'nia-cli' as const,
+                label: 'Install Nia CLI',
+                hint: 'Installs nia CLI + launches Nia skill setup',
+              },
+              {
+                value: 'skills' as const,
+                label: 'Install Nia Skill',
+                hint: 'Install via skills CLI',
+              },
+              {
+                value: 'add-mcp' as const,
+                label: 'Install via add-mcp',
+                hint: 'Quick install to supported agents',
+              },
+              {
+                value: 'mcp' as const,
+                label: 'Install via MCP',
+                hint: 'Will be deprecated soon; skills are better',
+              },
+              {
+                value: 'manual' as const,
+                label: 'Manual Setup (View Config)',
+                hint: 'View config for a specific agent',
+              },
+            ],
+            initialValue: 'nia-cli' as const,
+          }),
+        )
+      : entryMode === 'manual'
+        ? 'manual'
+        : 'nia-cli';
+
+  track('cli_install_method_selected', { install_method: action });
+
+  if (action === 'manual') {
     await runManualMode();
+    track('cli_wizard_completed', { outcome: 'manual', total_duration_ms: Date.now() - startTime });
+    await shutdown();
     return;
   }
 
-  // Get API key (needed for both MCP and Skills)
-  const apiKey = await getApiKey(options.apiKey);
+  // Get API key for install flows.
+  const apiKey = await getApiKey(options.apiKey, {
+    defaultMethod: entryMode === 'default' ? 'browser' : 'prompt',
+  });
 
   // Store API key for skills to use
   storeApiKey(apiKey);
@@ -227,9 +260,10 @@ export async function runWizard(options: WizardOptions): Promise<void> {
   let installedAddMcp = false;
   let installedMcp = false;
   let installedSkills = false;
+  let installedNiaCliSkill = false;
 
-  // Run add-mcp installation if selected
-  if (actions.includes('add-mcp')) {
+  // Run add-mcp installation if selected.
+  if (action === 'add-mcp') {
     console.log('');
     const success = await runAddMcpInstall(apiKey);
     if (success) {
@@ -240,8 +274,8 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
-  // Run MCP installation if selected
-  if (actions.includes('mcp')) {
+  // Run direct agent setup if selected.
+  if (action === 'mcp') {
     // Select install mode
     let mode: 'local' | 'remote';
     if (options.local !== undefined) {
@@ -291,8 +325,8 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     installedMcp = installedClients.length > 0;
   }
 
-  // Run Skills installation if selected
-  if (actions.includes('skills')) {
+  // Run Skills installation if selected.
+  if (action === 'skills') {
     console.log('');
     const success = await runSkillsInstall();
     if (success) {
@@ -303,10 +337,34 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     }
   }
 
+  if (action === 'nia-cli') {
+    console.log('');
+    const success = await runNiaCliSkillInstall(apiKey);
+    if (success) {
+      clack.log.success('Nia CLI skill installed!');
+      clack.log.message(chalk.dim('Run `nia skill` to manage your Nia CLI skill.'));
+      installedNiaCliSkill = true;
+    } else {
+      clack.log.warn('Nia CLI skill installation may have failed');
+    }
+  }
+
+  track('cli_install_completed', {
+    install_method: action,
+    success: installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill,
+    mode: action === 'mcp' ? (options.local ? 'local' : 'remote') : undefined,
+  });
+
   // Outro
-  if (installedAddMcp || installedMcp || installedSkills) {
+  if (installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill) {
+    const niaSkillManagementHint = installedNiaCliSkill
+      ? `\n${chalk.cyan('Nia CLI skill management:')} ${chalk.yellow('Run `nia skill` any time to manage your skill.')}\n`
+      : '';
+
     const outroMessage = `
 ${chalk.green('✓ Nia installed!')}
+
+${niaSkillManagementHint}
 
 ${chalk.cyan('Get started:')}
   • Browse pre-indexed sources: ${chalk.cyan('https://app.trynia.ai/explore')}
@@ -315,13 +373,16 @@ ${chalk.cyan('Get started:')}
 ${chalk.cyan('Try in your coding agent:')}
   ${chalk.yellow('"List my indexed sources"')}
   ${chalk.yellow('"Search vercel/ai-sdk for streaming"')}
-  ${chalk.yellow('"Run deep research on MCP protocols"')}
+  ${chalk.yellow('"Run deep research on agent tool protocols"')}
 
 ${chalk.dim('Using as API?')} ${chalk.cyan('https://docs.trynia.ai/api-guide')}
 ${chalk.dim('Follow us:')} ${chalk.cyan('https://x.com/nozomioai')}
 `;
     clack.outro(outroMessage);
+    track('cli_wizard_completed', { outcome: 'success', install_method: action, total_duration_ms: Date.now() - startTime });
   } else {
     clack.outro(chalk.dim('No changes made.'));
+    track('cli_wizard_completed', { outcome: 'no_changes', install_method: action, total_duration_ms: Date.now() - startTime });
   }
+  await shutdown();
 }
