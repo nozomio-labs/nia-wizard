@@ -26,7 +26,7 @@ async function runAddMcpInstall(apiKey: string): Promise<boolean> {
   const result = spawnSync(
     'npx',
     [
-      'add-mcp',
+      'add-mcp@latest',
       REMOTE_MCP_URL,
       '--header',
       `"Authorization: Bearer ${apiKey}"`,
@@ -49,7 +49,7 @@ async function runAddMcpInstall(apiKey: string): Promise<boolean> {
 async function runSkillsInstall(): Promise<boolean> {
   clack.log.info('Launching Nia skill installer...\n');
 
-  const result = spawnSync('npx', ['skills', 'add', 'nozomio-labs/nia-skill'], {
+  const result = spawnSync('npx', ['skills@latest', 'add', 'nozomio-labs/nia-skill'], {
     stdio: 'inherit',
     shell: true,
   });
