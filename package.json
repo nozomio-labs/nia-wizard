@@ -2,6 +2,7 @@
   "name": "nia-wizard",
   "version": "0.1.26",
   "description": "CLI wizard to install Nia to your coding agents",
+  "packageManager": "pnpm@10.30.3",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -9,10 +10,13 @@
   },
   "scripts": {
     "build": "tsup",
+    "changeset": "changeset",
     "dev": "tsup --watch",
     "start": "node dist/bin.js",
     "try": "pnpm build && node dist/bin.js",
     "typecheck": "tsc --noEmit",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "pnpm build"
   },
@@ -34,7 +38,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nozomio/nia-wizard"
+    "url": "git+https://github.com/nozomio-labs/nia-wizard.git"
+  },
+  "homepage": "https://github.com/nozomio-labs/nia-wizard",
+  "bugs": {
+    "url": "https://github.com/nozomio-labs/nia-wizard/issues"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",
@@ -46,6 +54,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.30.0",
     "@types/node": "^22.10.0",
     "@types/yargs": "^17.0.33",
     "tsup": "^8.3.5",
