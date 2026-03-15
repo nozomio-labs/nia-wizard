@@ -135,14 +135,28 @@ export async function getApiKey(
 }
 
 /**
+ * Print instructions for finishing onboarding manually via the web app.
+ */
+function printManualOnboardingFallback(): void {
+  console.log('');
+  clack.note(
+    `${chalk.bold('Finish setup at:')}\n\n` +
+    `    ${chalk.cyan(NIA_APP_URL)}\n\n` +
+    `Once signed in, go to ${chalk.bold('Settings → API Keys')} to create a key.\n` +
+    `Then re-run: ${chalk.yellow('npx nia-wizard <your-api-key>')}`,
+    'Manual Setup'
+  );
+}
+
+/**
  * Run the device authorization flow
  */
 async function runDeviceFlow(): Promise<string> {
   const spinner = clack.spinner();
-  
+
   // Step 1: Start device session
   spinner.start('Connecting to Nia...');
-  
+
   let session: DeviceSession;
   try {
     session = await startDeviceSession();
@@ -150,15 +164,16 @@ async function runDeviceFlow(): Promise<string> {
     track('cli_device_flow_started', { authorization_session_id: session.authorization_session_id });
   } catch (error) {
     spinner.stop('Failed to connect');
-    
+
     if (isDeviceFlowError(error)) {
       clack.log.error(error.message);
     } else {
       clack.log.error('Failed to connect to Nia servers. Check your internet connection.');
       debug(`Device flow error: ${error}`);
     }
-    
+
     // Fall back to manual entry
+    printManualOnboardingFallback();
     clack.log.info('Falling back to manual API key entry.');
     return await promptForManualApiKey();
   }
@@ -166,7 +181,7 @@ async function runDeviceFlow(): Promise<string> {
   // Step 2: Display the code and open browser
   const formattedCode = formatUserCode(session.user_code);
   const timeRemaining = getSessionTimeRemaining(session);
-  
+
   console.log('');
   clack.note(
     `${chalk.bold('Your authorization code:')}\n\n` +
@@ -174,22 +189,22 @@ async function runDeviceFlow(): Promise<string> {
     chalk.dim(`Code expires in ${Math.floor(timeRemaining / 60)} minutes`),
     'Browser Authorization'
   );
-  
+
   // Open browser
   clack.log.info(`Opening ${chalk.cyan(session.verification_url)}...`);
-  
+
   try {
     await open(session.verification_url);
   } catch {
     clack.log.warn('Could not open browser automatically.');
   }
-  
+
   console.log('');
   clack.log.message(
     chalk.dim('If the browser didn\'t open, go to:\n') +
     `  ${chalk.cyan(session.verification_url)}`
   );
-  
+
   // Step 3: Show instructions
   console.log('');
   clack.log.step(chalk.yellow('Complete these steps in your browser:'));
@@ -225,7 +240,8 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
   while (true) {
     if (!isSessionValid(session)) {
       spinner.stop('Session expired');
-      clack.log.error('Session has expired. Please start over.');
+      clack.log.error('Authorization session expired before completing.');
+      printManualOnboardingFallback();
       return abort('Session expired', 1);
     }
 
@@ -243,8 +259,8 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
 
           case 'expired':
             spinner.stop('Session expired');
-            clack.log.error('Session has expired.');
-            clack.log.info('Please run the wizard again to start a new session.');
+            clack.log.error('Authorization session expired.');
+            printManualOnboardingFallback();
             return abort('Session expired', 1);
 
           case 'consumed':
@@ -256,7 +272,7 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
           case 'invalid':
             spinner.stop('Invalid session');
             clack.log.error(error.message);
-            clack.log.info('Please run the wizard again to start a new session.');
+            printManualOnboardingFallback();
             return abort('Invalid session', 1);
 
           case 'network':
@@ -264,7 +280,7 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
             if (consecutiveNetworkErrors >= MAX_NETWORK_ERRORS) {
               spinner.stop('Connection failed');
               clack.log.error(`Failed to reach Nia servers after ${MAX_NETWORK_ERRORS} attempts.`);
-              clack.log.info('Falling back to manual API key entry.');
+              printManualOnboardingFallback();
               return await promptForManualApiKey();
             }
             break;
@@ -272,7 +288,7 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
           default:
             spinner.stop('Error');
             clack.log.error(error.message);
-            clack.log.info('Falling back to manual API key entry.');
+            printManualOnboardingFallback();
             return await promptForManualApiKey();
         }
       } else {
@@ -281,7 +297,7 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
           spinner.stop('Connection failed');
           clack.log.error('Lost connection to Nia servers.');
           debug(`Exchange error: ${error}`);
-          clack.log.info('Falling back to manual API key entry.');
+          printManualOnboardingFallback();
           return await promptForManualApiKey();
         }
       }
@@ -298,6 +314,11 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
  * Prompt user to manually enter their API key
  */
 async function promptForManualApiKey(): Promise<string> {
+  if (!process.stdin.isTTY) {
+    printManualOnboardingFallback();
+    return abort('No interactive terminal available. Please re-run with an API key.', 1);
+  }
+
   const shouldOpen = await abortIfCancelled(
     clack.confirm({
       message: `Open ${chalk.cyan(NIA_APP_URL)} to get your API key?`,

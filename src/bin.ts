@@ -8,6 +8,8 @@ import { runSkillAdd } from './skill.js';
 import { printAgentGuide } from './agent-guide.js';
 import { track, shutdown } from './utils/analytics.js';
 
+const isInteractive = Boolean(process.stdin.isTTY);
+
 function printCliError(error: unknown): void {
   if (error instanceof Error) {
     console.error(`Error: ${error.message}`);
@@ -52,12 +54,17 @@ const cli = yargs(hideBin(process.argv))
           description: 'CI mode (skip prompts)',
         }),
     async (argv) => {
+      const ci = argv.ci || !isInteractive;
+      if (!isInteractive && !argv.ci) {
+        console.log('Non-interactive terminal detected, running in CI mode.');
+        console.log('For the full interactive experience, run: npx nia-wizard\n');
+      }
       try {
         await runWizard({
           apiKey: argv['api-key'],
           local: argv.local ?? (argv.remote ? false : undefined),
           debug: argv.debug,
-          ci: argv.ci,
+          ci,
         });
       } catch (error) {
         track('cli_wizard_error', { error_type: 'wizard', error_message: error instanceof Error ? error.message : String(error) });
