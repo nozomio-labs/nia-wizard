@@ -1,0 +1,54 @@
+name: CLI Install Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1'
+
+env:
+  PNPM_VERSION: 10.30.3
+  SMOKE_NODE_VERSION: 24
+
+jobs:
+  smoke-extended:
+    name: Extended smoke (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux arm64
+            runner: ubuntu-24.04-arm
+          - name: Windows arm64
+            runner: windows-11-arm
+          - name: macOS Intel
+            runner: macos-15-intel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.SMOKE_NODE_VERSION }}
+          cache: pnpm
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Smoke test packaged CLI installs
+        run: node ./scripts/ci/install-smoke.mjs
