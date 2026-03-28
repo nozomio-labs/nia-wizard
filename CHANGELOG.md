@@ -1,5 +1,11 @@
 # nia-wizard
 
+## 0.1.28
+
+### Patch Changes
+
+- 0148c75: add agent onboarding flow
+
 ## 0.1.27
 
 ### Patch Changes
