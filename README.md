@@ -166,8 +166,8 @@ This prints the canonical agent workflow:
 
 1. Run `bun --version`
 2. Install `@nozomioai/nia@latest` globally with Bun or npm
-3. Tell the user to open `https://app.trynia.ai`
-4. Tell the user to go to `Settings -> API Keys` and create an API key
+3. Tell the user to open `https://app.trynia.ai/api-keys`
+4. Tell the user to create an API key there
 5. Ask the user to paste the `nk_...` key back to the agent
 6. Run `nia auth login --api-key <nk_api_key>`
 7. Run `nia skill --all`
