@@ -1,28 +1,31 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-function command(name) {
+function commandSpec(name) {
   if (process.platform !== 'win32') {
-    return name;
+    return { file: name, shell: false };
   }
 
   if (name === 'npm' || name === 'npx' || name === 'pnpm') {
-    return `${name}.cmd`;
+    return { file: name, shell: true };
   }
 
   if (name === 'bun' || name === 'bunx') {
-    return `${name}.exe`;
+    return { file: `${name}.exe`, shell: false };
   }
 
-  return name;
+  return { file: name, shell: false };
 }
 
 function run(cmd, args, options = {}) {
-  const result = spawnSync(command(cmd), args, {
+  const { file, shell } = commandSpec(cmd);
+  const result = spawnSync(file, args, {
     cwd: options.cwd ?? process.cwd(),
-    stdio: 'inherit',
+    stdio: options.capture ? 'pipe' : 'inherit',
     encoding: 'utf8',
+    shell,
+    windowsHide: true,
     env: {
       ...process.env,
       CI: 'true',
@@ -30,13 +33,20 @@ function run(cmd, args, options = {}) {
     },
   });
 
-  if (result.status !== 0) {
-    throw new Error(`Command failed: ${cmd} ${args.join(' ')}`);
+  if (result.error) {
+    throw result.error;
   }
-}
 
-function listTarballs(dir) {
-  return readdirSync(dir).filter((file) => file.endsWith('.tgz'));
+  if (result.status !== 0) {
+    const details = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
+    throw new Error(
+      details
+        ? `Command failed: ${cmd} ${args.join(' ')}\n${details}`
+        : `Command failed: ${cmd} ${args.join(' ')}`,
+    );
+  }
+
+  return result;
 }
 
 function registerTempDir(prefix, cleanupPaths, parentDir = process.cwd()) {
@@ -65,17 +75,14 @@ function createTempProject(prefix, cleanupPaths, tempRoot) {
 
 function getPackedTarball(cleanupPaths) {
   const workspaceDir = process.cwd();
-  const beforeTarballs = new Set(listTarballs(workspaceDir));
+  const result = run('npm', ['pack', '--json'], { capture: true });
+  const parsed = JSON.parse(result.stdout);
 
-  run('pnpm', ['pack']);
-
-  const newTarballs = listTarballs(workspaceDir).filter((file) => !beforeTarballs.has(file));
-
-  if (newTarballs.length !== 1) {
-    throw new Error(`Expected exactly one new tarball in ${workspaceDir}, found ${newTarballs.length}.`);
+  if (!Array.isArray(parsed) || parsed.length !== 1 || typeof parsed[0]?.filename !== 'string') {
+    throw new Error(`Unexpected npm pack output: ${result.stdout}`);
   }
 
-  const tarballPath = path.join(workspaceDir, newTarballs[0]);
+  const tarballPath = path.join(workspaceDir, parsed[0].filename);
   cleanupPaths.push(tarballPath);
 
   return { tarballPath };
