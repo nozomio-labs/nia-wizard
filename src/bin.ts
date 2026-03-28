@@ -25,7 +25,6 @@ const cli = yargs(hideBin(process.argv))
   .usage('$0 mcp add [options]')
   .usage('$0 mcp remove [options]')
   .usage('$0 skill add [options]')
-  .usage('$0 agent-guide')
   .command(
     '$0 [api-key]',
     'Install Nia to your coding agents',
@@ -52,14 +51,35 @@ const cli = yargs(hideBin(process.argv))
           type: 'boolean',
           default: false,
           description: 'CI mode (skip prompts)',
+        })
+        .option('agent', {
+          type: 'boolean',
+          default: false,
+          description: 'Print agent-facing Nia CLI onboarding prompt',
         }),
     async (argv) => {
-      const ci = argv.ci || !isInteractive;
-      if (!isInteractive && !argv.ci) {
-        console.log('Non-interactive terminal detected, running in CI mode.');
-        console.log('For the full interactive experience, run: npx nia-wizard\n');
-      }
       try {
+        if (argv.agent) {
+          printAgentGuide();
+          return;
+        }
+
+        const apiKeyArg = typeof argv['api-key'] === 'string'
+          ? argv['api-key']
+          : typeof argv.apiKey === 'string'
+            ? argv.apiKey
+            : undefined;
+
+        if (apiKeyArg === 'agent-guide') {
+          throw new Error('The `agent-guide` subcommand has been removed. Use `npx nia-wizard --agent`.');
+        }
+
+        const ci = argv.ci || !isInteractive;
+        if (!isInteractive && !argv.ci) {
+          console.log('Non-interactive terminal detected, running in CI mode.');
+          console.log('For the full interactive experience, run: npx nia-wizard\n');
+        }
+
         await runWizard({
           apiKey: argv['api-key'],
           local: argv.local ?? (argv.remote ? false : undefined),
@@ -72,14 +92,6 @@ const cli = yargs(hideBin(process.argv))
         printCliError(error);
         process.exit(1);
       }
-    },
-  )
-  .command(
-    'agent-guide',
-    'Print API-first agent onboarding guide in Markdown',
-    () => {},
-    () => {
-      printAgentGuide();
     },
   )
   .command(

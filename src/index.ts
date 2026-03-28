@@ -1,8 +1,8 @@
 // Main exports for programmatic usage
 export { runWizard } from './run.js';
+export { printAgentGuide, getAgentGuideMarkdown } from './agent-guide.js';
 export { runMCPAdd, runMCPRemove } from './mcp.js';
 export { runSkillAdd } from './skill.js';
-export { printAgentGuide } from './agent-guide.js';
 export {
   addMCPServerToClientsStep,
   removeMCPServerFromClientsStep,

@@ -26,6 +26,12 @@ npx nia-wizard
 
 Press Enter to continue with the recommended default setup, which signs you in and installs or updates `nia-cli` to the latest version, or use the arrow keys to choose advanced or manual setup.
 
+Print the agent-specific onboarding prompt:
+
+```bash
+npx nia-wizard --agent
+```
+
 ### With API Key
 
 ```bash
@@ -102,10 +108,10 @@ npx nia-wizard skill add \
   --ci
 ```
 
-Print the headless onboarding guide for agents:
+Print the agent-facing onboarding prompt:
 
 ```bash
-npx nia-wizard agent-guide
+npx nia-wizard --agent
 ```
 
 ## Options
@@ -116,6 +122,7 @@ npx nia-wizard agent-guide
 | `--remote`          | Use remote mode (connects to Nia cloud)                        |
 | `--debug`           | Enable debug logging                                           |
 | `--ci`              | CI mode (skip prompts, use defaults)                           |
+| `--agent`           | Print agent-facing Nia CLI onboarding prompt (root command)   |
 | `--api-key`, `-k`   | Nia API key                                                    |
 | `--non-interactive` | Fail fast instead of waiting for prompts (skill command)       |
 | `--target`          | Target coding agent for skill installation (skill command)     |
@@ -146,6 +153,26 @@ If you prefer, you can:
 - Get your API key from [app.trynia.ai](https://app.trynia.ai)
 - Pass it directly: `npx nia-wizard nk_xxx`
 - Or select "Enter API key manually" when prompted
+
+## Agent Onboarding Prompt
+
+Use the root `--agent` flag when you want an external coding agent to perform the Nia CLI setup steps on the user's machine instead of launching the local interactive wizard.
+
+```bash
+npx nia-wizard --agent
+```
+
+This prints the canonical agent workflow:
+
+1. Run `bun --version`
+2. Install `@nozomioai/nia@latest` globally with Bun or npm
+3. Tell the user to open `https://app.trynia.ai`
+4. Tell the user to go to `Settings -> API Keys` and create an API key
+5. Ask the user to paste the `nk_...` key back to the agent
+6. Run `nia auth login --api-key <nk_api_key>`
+7. Run `nia skill --all`
+
+This is a prompt-only flow intended for external agents. The user retrieves the API key manually and sends it back to the agent to finish setup.
 
 ## Supported Coding Agents
 
