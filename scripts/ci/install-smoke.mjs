@@ -1,5 +1,4 @@
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -36,8 +35,18 @@ function run(cmd, args, options = {}) {
   }
 }
 
-function createTempProject(prefix) {
-  const projectDir = mkdtempSync(path.join(os.tmpdir(), prefix));
+function listTarballs(dir) {
+  return readdirSync(dir).filter((file) => file.endsWith('.tgz'));
+}
+
+function registerTempDir(prefix, cleanupPaths, parentDir = process.cwd()) {
+  const dir = mkdtempSync(path.join(parentDir, prefix));
+  cleanupPaths.push(dir);
+  return dir;
+}
+
+function createTempProject(prefix, cleanupPaths, tempRoot) {
+  const projectDir = registerTempDir(prefix, cleanupPaths, tempRoot);
 
   writeFileSync(
     path.join(projectDir, 'package.json'),
@@ -54,25 +63,26 @@ function createTempProject(prefix) {
   return projectDir;
 }
 
-function getPackedTarball() {
-  const packDir = mkdtempSync(path.join(os.tmpdir(), 'nia-wizard-pack-'));
+function getPackedTarball(cleanupPaths) {
+  const workspaceDir = process.cwd();
+  const beforeTarballs = new Set(listTarballs(workspaceDir));
 
-  run('pnpm', ['pack', '--pack-destination', packDir]);
+  run('pnpm', ['pack']);
 
-  const tarballs = readdirSync(packDir).filter((file) => file.endsWith('.tgz'));
+  const newTarballs = listTarballs(workspaceDir).filter((file) => !beforeTarballs.has(file));
 
-  if (tarballs.length !== 1) {
-    throw new Error(`Expected exactly one tarball in ${packDir}, found ${tarballs.length}.`);
+  if (newTarballs.length !== 1) {
+    throw new Error(`Expected exactly one new tarball in ${workspaceDir}, found ${newTarballs.length}.`);
   }
 
-  return {
-    packDir,
-    tarballPath: path.join(packDir, tarballs[0]),
-  };
+  const tarballPath = path.join(workspaceDir, newTarballs[0]);
+  cleanupPaths.push(tarballPath);
+
+  return { tarballPath };
 }
 
-function smokeWithNpm(tarballPath) {
-  const projectDir = createTempProject('nia-wizard-npm-');
+function smokeWithNpm(tarballPath, cleanupPaths, tempRoot) {
+  const projectDir = createTempProject('nia-wizard-npm-', cleanupPaths, tempRoot);
 
   console.log(`\n==> npm/npx smoke test in ${projectDir}`);
 
@@ -81,11 +91,10 @@ function smokeWithNpm(tarballPath) {
   run('npx', ['--no-install', 'nia-wizard', '--help'], { cwd: projectDir });
   run('npx', ['--no-install', 'nia-wizard', 'agent-guide'], { cwd: projectDir });
 
-  return projectDir;
 }
 
-function smokeWithBun(tarballPath) {
-  const projectDir = createTempProject('nia-wizard-bun-');
+function smokeWithBun(tarballPath, cleanupPaths, tempRoot) {
+  const projectDir = createTempProject('nia-wizard-bun-', cleanupPaths, tempRoot);
 
   console.log(`\n==> Bun/bunx smoke test in ${projectDir}`);
 
@@ -94,17 +103,16 @@ function smokeWithBun(tarballPath) {
   run('bunx', ['nia-wizard', '--help'], { cwd: projectDir });
   run('bunx', ['nia-wizard', 'agent-guide'], { cwd: projectDir });
 
-  return projectDir;
 }
 
 const cleanupPaths = [];
 
 try {
-  const { packDir, tarballPath } = getPackedTarball();
-  cleanupPaths.push(packDir);
+  const tempRoot = registerTempDir('.nia-wizard-smoke-', cleanupPaths);
+  const { tarballPath } = getPackedTarball(cleanupPaths);
 
-  cleanupPaths.push(smokeWithNpm(tarballPath));
-  cleanupPaths.push(smokeWithBun(tarballPath));
+  smokeWithNpm(tarballPath, cleanupPaths, tempRoot);
+  smokeWithBun(tarballPath, cleanupPaths, tempRoot);
 
   console.log('\nAll CLI install smoke tests passed.');
 } finally {
