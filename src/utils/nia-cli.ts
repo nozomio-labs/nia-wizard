@@ -25,7 +25,8 @@ function hasCommand(command: string, args: string[] = ['--version']): boolean {
   const result = spawnSync(command, args, {
     stdio: 'pipe',
     encoding: 'utf-8',
-    shell: false,
+    // On Windows, shell is needed to resolve .cmd shims (npm) via PATHEXT
+    shell: process.platform === 'win32',
   });
 
   debug(`${command} ${args.join(' ')} status`, result.status);
@@ -33,7 +34,7 @@ function hasCommand(command: string, args: string[] = ['--version']): boolean {
 }
 
 export function isNiaCliInstalled(): boolean {
-  return hasCommand(process.platform === 'win32' ? 'nia.cmd' : 'nia');
+  return hasCommand('nia');
 }
 
 function hasBun(): boolean {
@@ -52,7 +53,7 @@ function runLatestNia(args: string[]): boolean {
 
   const result = spawnSync(npxCommand(), ['-y', '-p', LATEST_NIA_CLI_PACKAGE, 'nia', ...args], {
     stdio: 'inherit',
-    shell: false,
+    shell: process.platform === 'win32',
   });
 
   return result.status === 0;
@@ -79,7 +80,7 @@ export function ensureNiaCliInstalled(): boolean {
     : spawnSync(npmCommand(), ['install', '-g', LATEST_NIA_CLI_PACKAGE], {
         stdio: 'pipe',
         encoding: 'utf-8',
-        shell: false,
+        shell: process.platform === 'win32',
       });
 
   if (installResult.status !== 0) {
