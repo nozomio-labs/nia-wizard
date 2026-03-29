@@ -1,5 +1,11 @@
 # nia-wizard
 
+## 0.1.29
+
+### Patch Changes
+
+- a476def: tighten instruction for getting api key
+
 ## 0.1.28
 
 ### Patch Changes
