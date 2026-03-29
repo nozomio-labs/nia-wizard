@@ -1,5 +1,11 @@
 # nia-wizard
 
+## 0.1.30
+
+### Patch Changes
+
+- b2a03fd: Fix Windows command resolution and tighten API key validation for the installer flow.
+
 ## 0.1.29
 
 ### Patch Changes
