@@ -4,6 +4,7 @@ import { debug } from './debug.js';
 
 const NIA_CLI_PACKAGE = '@nozomioai/nia';
 const LATEST_NIA_CLI_PACKAGE = `${NIA_CLI_PACKAGE}@latest`;
+const API_KEY_PATTERN = /^nk_[A-Za-z0-9_-]+$/;
 
 function npmCommand(): string {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -39,6 +40,10 @@ export function isNiaCliInstalled(): boolean {
 
 function hasBun(): boolean {
   return hasCommand(bunCommand());
+}
+
+function validateApiKey(apiKey: string): boolean {
+  return API_KEY_PATTERN.test(apiKey);
 }
 
 function runLatestNia(args: string[]): boolean {
@@ -114,5 +119,10 @@ export function runNiaSkill(): boolean {
 }
 
 export function runNiaAuthLogin(apiKey: string): boolean {
+  if (!validateApiKey(apiKey)) {
+    clack.log.error('Invalid API key format. Keys should look like `nk_...` and contain only letters, numbers, `_`, or `-`.');
+    return false;
+  }
+
   return runLatestNia(['auth', 'login', '--api-key', apiKey]);
 }
