@@ -52,7 +52,7 @@ export async function askWizardStartMode(): Promise<'default' | 'advanced' | 'ma
         {
           value: 'default' as const,
           label: 'Default setup (recommended)',
-          hint: 'Browser sign-in + install nia-cli automatically',
+          hint: 'Browser sign-in + remove legacy nia-sync + install nia-cli',
         },
         {
           value: 'advanced' as const,

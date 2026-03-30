@@ -15,6 +15,7 @@ This will:
 1. Install Node.js if needed
 2. Run the wizard which:
    - Opens your browser for authentication
+   - Removes any legacy Python `nia-sync` install first
    - Installs dependencies (pipx, etc.) for local mode
    - Configures your coding agents
 
@@ -24,7 +25,7 @@ This will:
 npx nia-wizard
 ```
 
-Press Enter to continue with the recommended default setup, which signs you in and installs or updates `nia-cli` to the latest version, or use the arrow keys to choose advanced or manual setup.
+Press Enter to continue with the recommended default setup, which signs you in, removes any legacy Python `nia-sync` install, and installs or updates `nia-cli` to the latest version, or use the arrow keys to choose advanced or manual setup.
 
 Print the agent-specific onboarding prompt:
 
@@ -74,7 +75,7 @@ npx nia-wizard
 
 The wizard stores your API key at `~/.config/nia/api_key`.
 
-- Select `Install Nia CLI (recommended)` to auto-install or update `@nozomioai/nia` to the latest version, run `nia auth login --api-key ...`, and then run `nia skill`.
+- Select `Install Nia CLI (recommended)` to remove any legacy Python `nia-sync` install, auto-install or update `@nozomioai/nia` to the latest version, run `nia auth login --api-key ...`, and then run `nia skill`.
 - Select `Install Nia Skill` to use the existing `skills` CLI flow.
 - Select `Install via add-mcp` for a quick install to supported agents.
 
@@ -164,15 +165,29 @@ npx nia-wizard --agent
 
 This prints the canonical agent workflow:
 
-1. Run `bun --version`
-2. Install `@nozomioai/nia@latest` globally with Bun or npm
-3. Tell the user to open `https://app.trynia.ai/api-keys`
-4. Tell the user to create an API key there
-5. Ask the user to paste the `nk_...` key back to the agent
-6. Run `nia auth login --api-key <nk_api_key>`
-7. Run `nia skill --all`
+1. Check for legacy `nia-sync` with `uv tool list` or `python3 -m pip show nia-sync`
+2. Uninstall `nia-sync` and remove `~/.nia-sync/config.json`
+3. Run `bun --version`
+4. Install `@nozomioai/nia@latest` globally with Bun or npm
+5. Tell the user to open `https://app.trynia.ai/api-keys`
+6. Tell the user to create an API key there
+7. Ask the user to paste the `nk_...` key back to the agent
+8. Run `nia auth login --api-key <nk_api_key>`
+9. Run `nia skill --all`
 
 This is a prompt-only flow intended for external agents. The user retrieves the API key manually and sends it back to the agent to finish setup.
+
+## Legacy Python CLI Cleanup
+
+Older Nia installs may exist as the Python package `nia-sync`, commonly installed with `pip` or `uv`. That package also installs a `nia` command, which conflicts with the newer `@nozomioai/nia` CLI.
+
+When you choose the `Install Nia CLI` flow, the wizard now:
+
+1. Detects `nia-sync` via `uv tool list`, `python3 -m pip show nia-sync`, `python -m pip show nia-sync`, or `pip show nia-sync`
+2. Uninstalls any detected `nia-sync` install
+3. Deletes `~/.nia-sync/config.json`
+4. Removes `~/.nia-sync` if it is empty afterward
+5. Installs or updates `@nozomioai/nia`
 
 ## Supported Coding Agents
 

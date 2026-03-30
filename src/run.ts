@@ -14,6 +14,7 @@ import {
 import clack from './utils/clack.js';
 import { enableDebug } from './utils/debug.js';
 import { dependenciesReady, ensureLocalDependencies } from './utils/dependencies.js';
+import { cleanupLegacyNiaSync } from './utils/legacy-nia-sync.js';
 import { ensureNiaCliInstalled, runNiaAuthLogin, runNiaSkill } from './utils/nia-cli.js';
 import type { WizardOptions } from './utils/types.js';
 
@@ -62,6 +63,52 @@ async function runSkillsInstall(): Promise<boolean> {
  */
 async function runNiaCliSkillInstall(apiKey: string): Promise<boolean> {
   clack.log.info('Launching Nia CLI skill installer...\n');
+
+  const legacyCleanup = cleanupLegacyNiaSync();
+
+  if (legacyCleanup.detected.sources.length > 0) {
+    track('cli_legacy_nia_sync_detected', {
+      detected_sources: legacyCleanup.detected.sources.join(','),
+      package_sources: legacyCleanup.detected.packageSources.join(','),
+      has_legacy_state: legacyCleanup.detected.hasLegacyState,
+    });
+
+    clack.log.info(
+      'Detected legacy Python `nia-sync`. Removing it before installing the new Nia CLI because it owns the `nia` command.',
+    );
+  }
+
+  if (!legacyCleanup.success) {
+    track('cli_legacy_nia_sync_cleanup_failed', {
+      detected_sources: legacyCleanup.detected.sources.join(','),
+      package_sources: legacyCleanup.detected.packageSources.join(','),
+      remaining_sources: legacyCleanup.remaining.sources.join(','),
+      attempted_actions: legacyCleanup.attemptedActions.join(' | '),
+      completed_actions: legacyCleanup.completedActions.join(' | '),
+      error: legacyCleanup.blockingError ?? 'unknown',
+    });
+
+    if (legacyCleanup.blockingError) {
+      clack.log.error(legacyCleanup.blockingError);
+    }
+    clack.log.error('Please remove the legacy `nia-sync` install and rerun the wizard.');
+    return false;
+  }
+
+  if (legacyCleanup.detected.sources.length > 0) {
+    track('cli_legacy_nia_sync_cleanup_completed', {
+      detected_sources: legacyCleanup.detected.sources.join(','),
+      package_sources: legacyCleanup.detected.packageSources.join(','),
+      attempted_actions: legacyCleanup.attemptedActions.join(' | '),
+      completed_actions: legacyCleanup.completedActions.join(' | '),
+      remaining_sources: legacyCleanup.remaining.sources.join(','),
+    });
+
+    clack.log.success('Legacy `nia-sync` cleanup completed.');
+    for (const note of legacyCleanup.notes) {
+      clack.log.info(note);
+    }
+  }
 
   if (!ensureNiaCliInstalled()) {
     return false;
@@ -209,7 +256,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
               {
                 value: 'nia-cli' as const,
                 label: 'Install Nia CLI',
-                hint: 'Installs nia CLI + launches Nia skill setup',
+                hint: 'Removes legacy nia-sync, installs nia CLI, then runs Nia skill setup',
               },
               {
                 value: 'skills' as const,
