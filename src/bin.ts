@@ -71,7 +71,8 @@ const cli = yargs(hideBin(process.argv))
             : undefined;
 
         if (apiKeyArg === 'agent-guide') {
-          throw new Error('The `agent-guide` subcommand has been removed. Use `npx nia-wizard --agent`.');
+          printAgentGuide();
+          return;
         }
 
         const ci = argv.ci || !isInteractive;
