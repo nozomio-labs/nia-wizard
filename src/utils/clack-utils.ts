@@ -172,6 +172,11 @@ async function runDeviceFlow(): Promise<string> {
       debug(`Device flow error: ${error}`);
     }
 
+    track('cli_wizard_error', {
+      error_type: 'device_session_start_failed',
+      error_message: isDeviceFlowError(error) ? error.message : 'Failed to connect to Nia servers',
+    });
+
     // Fall back to manual entry
     printManualOnboardingFallback();
     clack.log.info('Falling back to manual API key entry.');
@@ -229,20 +234,84 @@ function sleep(ms: number): Promise<void> {
  * Auto-poll for authorization and exchange for API key.
  * Polls every 2s (with backoff on consecutive network errors), up to session expiry.
  */
-async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<string> {
+async function waitForAuthorizationAndExchange(initialSession: DeviceSession): Promise<string> {
   const spinner = clack.spinner();
   spinner.start('Waiting for browser authorization...');
 
   const POLL_INTERVAL_MS = 2000;
   const MAX_NETWORK_ERRORS = 5;
+  const MAX_SESSION_RETRIES = 2;
   let consecutiveNetworkErrors = 0;
+  let session = initialSession;
+  let sessionRetries = 0;
+  let pollCount = 0;
 
   while (true) {
+    // Auto-retry on session expiry instead of aborting
     if (!isSessionValid(session)) {
-      spinner.stop('Session expired');
-      clack.log.error('Authorization session expired before completing.');
-      printManualOnboardingFallback();
-      return abort('Session expired', 1);
+      if (sessionRetries < MAX_SESSION_RETRIES) {
+        sessionRetries++;
+        spinner.stop('Session expired — starting a new one...');
+
+        try {
+          session = await startDeviceSession();
+          track('cli_device_flow_started', {
+            authorization_session_id: session.authorization_session_id,
+            retry: sessionRetries,
+          });
+
+          const formattedCode = formatUserCode(session.user_code);
+          const timeRemaining = getSessionTimeRemaining(session);
+          console.log('');
+          clack.note(
+            `${chalk.bold('New authorization code:')}\n\n` +
+            `    ${chalk.bold.green(formattedCode)}\n\n` +
+            chalk.dim(`Code expires in ${Math.floor(timeRemaining / 60)} minutes`),
+            'Session Renewed'
+          );
+
+          try { await open(session.verification_url); } catch {}
+          clack.log.message(
+            chalk.dim('Browser opened. If not, go to:\n') +
+            `  ${chalk.cyan(session.verification_url)}`
+          );
+          console.log('');
+
+          spinner.start('Waiting for browser authorization...');
+          pollCount = 0;
+          consecutiveNetworkErrors = 0;
+          continue;
+        } catch {
+          track('cli_wizard_error', {
+            error_type: 'device_session_retry_failed',
+            error_message: 'Failed to start new device session after expiry',
+          });
+          printManualOnboardingFallback();
+          clack.log.info('Falling back to manual API key entry.');
+          return await promptForManualApiKey();
+        }
+      } else {
+        spinner.stop('Session expired');
+        clack.log.error('Authorization session expired after multiple attempts.');
+        track('cli_wizard_error', {
+          error_type: 'auth_session_expired',
+          error_message: `Session expired after ${MAX_SESSION_RETRIES} retries`,
+        });
+        printManualOnboardingFallback();
+        return abort('Session expired', 1);
+      }
+    }
+
+    // Update spinner with countdown + periodic URL reminder
+    const remaining = getSessionTimeRemaining(session);
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    if (pollCount > 0 && pollCount % 15 === 0) {
+      spinner.message(`Waiting... (${timeStr} remaining) — ${session.verification_url}`);
+    } else {
+      spinner.message(`Waiting for browser authorization... (${timeStr} remaining)`);
     }
 
     try {
@@ -258,20 +327,28 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
             break;
 
           case 'expired':
-            spinner.stop('Session expired');
-            clack.log.error('Authorization session expired.');
-            printManualOnboardingFallback();
-            return abort('Session expired', 1);
+            // Invalidate session so the top-of-loop retry logic triggers
+            session = { ...session, expires_at: new Date(0).toISOString() };
+            consecutiveNetworkErrors = 0;
+            break;
 
           case 'consumed':
             spinner.stop('Session already used');
             clack.log.error('This session was already used.');
             clack.log.info('Please run the wizard again to start a new session.');
+            track('cli_wizard_error', {
+              error_type: 'auth_session_consumed',
+              error_message: error.message,
+            });
             return abort('Session already used', 1);
 
           case 'invalid':
             spinner.stop('Invalid session');
             clack.log.error(error.message);
+            track('cli_wizard_error', {
+              error_type: 'auth_session_invalid',
+              error_message: error.message,
+            });
             printManualOnboardingFallback();
             return abort('Invalid session', 1);
 
@@ -280,6 +357,10 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
             if (consecutiveNetworkErrors >= MAX_NETWORK_ERRORS) {
               spinner.stop('Connection failed');
               clack.log.error(`Failed to reach Nia servers after ${MAX_NETWORK_ERRORS} attempts.`);
+              track('cli_wizard_error', {
+                error_type: 'auth_network_failure',
+                error_message: `${MAX_NETWORK_ERRORS} consecutive network errors`,
+              });
               printManualOnboardingFallback();
               return await promptForManualApiKey();
             }
@@ -288,6 +369,10 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
           default:
             spinner.stop('Error');
             clack.log.error(error.message);
+            track('cli_wizard_error', {
+              error_type: 'auth_unknown_error',
+              error_message: error.message,
+            });
             printManualOnboardingFallback();
             return await promptForManualApiKey();
         }
@@ -297,12 +382,17 @@ async function waitForAuthorizationAndExchange(session: DeviceSession): Promise<
           spinner.stop('Connection failed');
           clack.log.error('Lost connection to Nia servers.');
           debug(`Exchange error: ${error}`);
+          track('cli_wizard_error', {
+            error_type: 'auth_network_failure',
+            error_message: 'Lost connection after consecutive errors',
+          });
           printManualOnboardingFallback();
           return await promptForManualApiKey();
         }
       }
     }
 
+    pollCount++;
     const backoff = consecutiveNetworkErrors > 0
       ? POLL_INTERVAL_MS * Math.min(consecutiveNetworkErrors, 4)
       : POLL_INTERVAL_MS;

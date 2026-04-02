@@ -8,6 +8,12 @@ import { runSkillAdd } from './skill.js';
 import { printAgentGuide } from './agent-guide.js';
 import { track, shutdown } from './utils/analytics.js';
 
+// Flush analytics on Ctrl+C so wizard_completed events aren't lost
+process.on('SIGINT', async () => {
+  await shutdown();
+  process.exit(0);
+});
+
 const isInteractive = Boolean(process.stdin.isTTY);
 
 function printCliError(error: unknown): void {

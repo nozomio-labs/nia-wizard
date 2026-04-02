@@ -271,6 +271,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
       installedAddMcp = true;
     } else {
       clack.log.warn('add-mcp installation may have failed');
+      track('cli_wizard_error', { error_type: 'install_failed', install_method: 'add-mcp' });
     }
   }
 
@@ -334,6 +335,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
       installedSkills = true;
     } else {
       clack.log.warn('Skills installation may have failed');
+      track('cli_wizard_error', { error_type: 'install_failed', install_method: 'skills' });
     }
   }
 
@@ -346,6 +348,7 @@ export async function runWizard(options: WizardOptions): Promise<void> {
       installedNiaCliSkill = true;
     } else {
       clack.log.warn('Nia CLI skill installation may have failed');
+      track('cli_wizard_error', { error_type: 'install_failed', install_method: 'nia-cli' });
     }
   }
 
@@ -355,8 +358,17 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     mode: action === 'mcp' ? (options.local ? 'local' : 'remote') : undefined,
   });
 
+  // Track completion before showing outro (user may Ctrl+C after seeing result)
+  const wizardOutcome = (installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill)
+    ? 'success' : 'no_changes';
+  track('cli_wizard_completed', {
+    outcome: wizardOutcome,
+    install_method: action,
+    total_duration_ms: Date.now() - startTime,
+  });
+
   // Outro
-  if (installedAddMcp || installedMcp || installedSkills || installedNiaCliSkill) {
+  if (wizardOutcome === 'success') {
     const niaSkillManagementHint = installedNiaCliSkill
       ? `\n${chalk.cyan('Nia CLI skill management:')} ${chalk.yellow('Run `nia skill` any time to manage your skill.')}\n`
       : '';
@@ -379,10 +391,8 @@ ${chalk.dim('Using as API?')} ${chalk.cyan('https://docs.trynia.ai/api-guide')}
 ${chalk.dim('Follow us:')} ${chalk.cyan('https://x.com/nozomioai')}
 `;
     clack.outro(outroMessage);
-    track('cli_wizard_completed', { outcome: 'success', install_method: action, total_duration_ms: Date.now() - startTime });
   } else {
     clack.outro(chalk.dim('No changes made.'));
-    track('cli_wizard_completed', { outcome: 'no_changes', install_method: action, total_duration_ms: Date.now() - startTime });
   }
   await shutdown();
 }
