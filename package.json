@@ -1,6 +1,6 @@
 {
   "name": "nia-wizard",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "description": "CLI wizard to install Nia to your coding agents",
   "packageManager": "pnpm@10.30.3",
   "type": "module",
