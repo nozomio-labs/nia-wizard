@@ -1,5 +1,11 @@
 # nia-wizard
 
+## 0.1.34
+
+### Patch Changes
+
+- 64ad2d7: update wizard outro
+
 ## 0.1.33
 
 ### Patch Changes
