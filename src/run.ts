@@ -15,6 +15,7 @@ import clack from './utils/clack.js';
 import { enableDebug } from './utils/debug.js';
 import { dependenciesReady, ensureLocalDependencies } from './utils/dependencies.js';
 import { ensureNiaCliInstalled, runNiaAuthLogin, runNiaSkill } from './utils/nia-cli.js';
+import { buildSuccessOutro } from './utils/outro.js';
 import type { WizardOptions } from './utils/types.js';
 
 /**
@@ -344,7 +345,6 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     const success = await runNiaCliSkillInstall(apiKey);
     if (success) {
       clack.log.success('Nia CLI skill installed!');
-      clack.log.message(chalk.dim('Run `nia skill` to manage your Nia CLI skill.'));
       installedNiaCliSkill = true;
     } else {
       clack.log.warn('Nia CLI skill installation may have failed');
@@ -367,30 +367,9 @@ export async function runWizard(options: WizardOptions): Promise<void> {
     total_duration_ms: Date.now() - startTime,
   });
 
-  // Outro
+  // Outro: capabilities, workflows, and prompts (see buildSuccessOutro)
   if (wizardOutcome === 'success') {
-    const niaSkillManagementHint = installedNiaCliSkill
-      ? `\n${chalk.cyan('Nia CLI skill management:')} ${chalk.yellow('Run `nia skill` any time to manage your skill.')}\n`
-      : '';
-
-    const outroMessage = `
-${chalk.green('✓ Nia installed!')}
-
-${niaSkillManagementHint}
-
-${chalk.cyan('Get started:')}
-  • Browse pre-indexed sources: ${chalk.cyan('https://app.trynia.ai/explore')}
-  • Or index your own repos, docs, and papers
-
-${chalk.cyan('Try in your coding agent:')}
-  ${chalk.yellow('"List my indexed sources"')}
-  ${chalk.yellow('"Search vercel/ai-sdk for streaming"')}
-  ${chalk.yellow('"Run deep research on agent tool protocols"')}
-
-${chalk.dim('Using as API?')} ${chalk.cyan('https://docs.trynia.ai/api-guide')}
-${chalk.dim('Follow us:')} ${chalk.cyan('https://x.com/nozomioai')}
-`;
-    clack.outro(outroMessage);
+    clack.outro(buildSuccessOutro({ installedNiaCliSkill }));
   } else {
     clack.outro(chalk.dim('No changes made.'));
   }
